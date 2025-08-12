@@ -43,8 +43,8 @@ public class BusControllerIntegrationTest {
         bus.setSeatingCapacity(50);
         bus.setStandingCapacity(15);
         bus.setBusType(Bus.BusType.NORMAL);
-        bus.setNtcPermitNumber(12345678);
-        
+        bus.setNtcPermitNumber(1234567890);
+
         mockMvc.perform(MockMvcRequestBuilders.post("/api/buses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(bus)))
@@ -65,13 +65,38 @@ public class BusControllerIntegrationTest {
         bus.setBusType(Bus.BusType.NORMAL);
         bus.setSeatingCapacity(50);
         bus.setStandingCapacity(15);
-        bus.setNtcPermitNumber(12345678);
+        bus.setNtcPermitNumber(1234567890);
         busRepository.save(bus);
 
         // Then, retrieve it via the API endpoint
         mockMvc.perform(MockMvcRequestBuilders.get("/api/buses/{id}", bus.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationNumber").value("NB-1111"));
+    }
+
+    @Test
+    void whenPostInvalidBus_thenStatus400AndErrorMessagesAreReturned() throws Exception {
+        Bus bus = new Bus();
+        bus.setRegistrationNumber("NB-9999");
+        bus.setMake("Ashok Leyland");
+        bus.setModel("Viking");
+        bus.setYearOfManufacture(2022);
+        bus.setFuelType(Bus.FuelType.DIESEL);
+        bus.setActive(true);
+        bus.setSeatingCapacity(0); // This is an invalid value
+        bus.setStandingCapacity(-5); // This is another invalid value
+        bus.setBusType(null); // This is also an invalid value
+        bus.setNtcPermitNumber(123); // Invalid NTC permit number
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/buses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(bus)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").exists())
+                .andExpect(jsonPath("$.errors.seatingCapacity").value("Seating capacity must be at least 1"))
+                .andExpect(jsonPath("$.errors.standingCapacity").value("Standing capacity must be at least 0"))
+                .andExpect(jsonPath("$.errors.busType").value("Bus type is mandatory"))
+                .andExpect(jsonPath("$.errors.ntcPermitNumber").value("NTC permit number must be at least 10 digits"));
     }
     
 }

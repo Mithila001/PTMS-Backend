@@ -2,6 +2,9 @@ package com.tritonptms.public_transport_management_system.controller;
 
 import com.tritonptms.public_transport_management_system.model.Bus;
 import com.tritonptms.public_transport_management_system.service.BusService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +32,7 @@ public class BusController {
 
     // GET /api/buses/{id}: Retrieves a single bus by its ID
     @GetMapping("/{id}")
-    public ResponseEntity<Bus> getBusById(@PathVariable Long id) {
+    public ResponseEntity<Bus> getBusById( @PathVariable Long id) {
         Optional<Bus> bus = busService.getBusById(id);
         return bus.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -37,14 +40,14 @@ public class BusController {
 
     // POST /api/buses: Creates a new bus
     @PostMapping
-    public ResponseEntity<Bus> createBus(@RequestBody Bus bus) {
+    public ResponseEntity<Bus> createBus(@Valid @RequestBody Bus bus) {
         Bus newBus = busService.saveBus(bus);
         return new ResponseEntity<>(newBus, HttpStatus.CREATED);
     }
 
     // PUT /api/buses/{id}: Updates an existing bus
     @PutMapping("/{id}")
-    public ResponseEntity<Bus> updateBus(@PathVariable Long id, @RequestBody Bus busDetails) {
+    public ResponseEntity<Bus> updateBus(@PathVariable Long id, @Valid @RequestBody Bus busDetails) {
         // Here you would add logic to check if the bus with the ID exists
         // and then update it with the new details.
         busDetails.setId(id);
