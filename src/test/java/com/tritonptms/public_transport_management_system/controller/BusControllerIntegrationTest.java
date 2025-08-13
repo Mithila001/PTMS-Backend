@@ -3,6 +3,9 @@ package com.tritonptms.public_transport_management_system.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tritonptms.public_transport_management_system.model.Bus;
 import com.tritonptms.public_transport_management_system.repository.BusRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import com.tritonptms.public_transport_management_system.model.Vehicle.FuelType;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 public class BusControllerIntegrationTest {
 
      @Autowired
@@ -26,10 +30,7 @@ public class BusControllerIntegrationTest {
     @Autowired
     private BusRepository busRepository;
 
-    @AfterEach
-    void tearDown() {
-        busRepository.deleteAll(); // Clean up the database after each test
-    }
+    
 
     @Test
     void whenPostBus_thenStatus201AndBusIsReturned() throws Exception {
