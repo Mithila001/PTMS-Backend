@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import jakarta.validation.constraints.Size;
+import org.locationtech.jts.geom.LineString;
 
 @Entity
 @Table(name = "routes")
@@ -40,6 +41,9 @@ public class Route {
     @CollectionTable(name = "route_stops", joinColumns = @JoinColumn(name = "route_id"))
     @Column(name = "stop_name")
     private List<String> majorStops; // List of key stops along the route
+
+    @Column(columnDefinition = "geography(LineString,4326)")
+    private LineString routePath;
 
     public Route() {
     }
@@ -84,5 +88,13 @@ public class Route {
 
     public void setMajorStops(List<String> majorStops) {
         this.majorStops = majorStops;
+    }
+
+    public LineString getRoutePath() {
+        return routePath;
+    }
+
+    public void setRoutePath(LineString routePath) {
+        this.routePath = routePath;
     }
 }

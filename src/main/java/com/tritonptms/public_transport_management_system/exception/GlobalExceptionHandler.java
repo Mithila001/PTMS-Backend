@@ -43,4 +43,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<BaseResponse<String>> handleRuntimeException(RuntimeException ex) {
+        BaseResponse<String> errorResponse = new BaseResponse<>(
+            HttpStatus.BAD_REQUEST.value(),
+            "Invalid request: " + ex.getMessage(),
+            null,
+            null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
 }
