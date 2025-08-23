@@ -13,17 +13,17 @@ public class PublicTransportManagementSystemApplication {
 		SpringApplication.run(PublicTransportManagementSystemApplication.class, args);
 	}
 
-	@Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // Apply to all API endpoints
-                        .allowedOrigins("http://localhost:5173/") // Allow requests from React app's port
-                        .allowedMethods("GET", "POST", "PUT", "DELETE"); // Allow these HTTP methods
-            }
-        };
-    }
+	// @Bean
+    // public WebMvcConfigurer corsConfigurer() {
+    //     return new WebMvcConfigurer() {
+    //         @Override
+    //         public void addCorsMappings(CorsRegistry registry) {
+    //             registry.addMapping("/api/**") // Apply to all API endpoints
+    //                     .allowedOrigins("http://localhost:5173/") // Allow requests from React app's port
+    //                     .allowedMethods("GET", "POST", "PUT", "DELETE"); // Allow these HTTP methods
+    //         }
+    //     };
+    // }
 
 	
 

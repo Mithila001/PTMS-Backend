@@ -22,9 +22,11 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         // Get the authenticated user principal from the SecurityContext
-        // We know this is our custom User object because of our UserDetailsServiceImpl changes
+        // We know this is our custom User object because of our UserDetailsServiceImpl
+        // changes
         User user = (User) authentication.getPrincipal();
 
         // Convert the user's roles from a Set<Role> to a List<String>

@@ -3,6 +3,9 @@
 package com.tritonptms.public_transport_management_system.config.security;
 
 import com.tritonptms.public_transport_management_system.service.security.UserDetailsServiceImpl;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,7 +43,8 @@ public class SecurityConfig {
 
     // You can keep this since it's good practice and your code already uses it.
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
@@ -58,27 +62,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/operations/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
-                .anyRequest().authenticated()
-            )
-           
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .permitAll()
-                .deleteCookies("JSESSIONID")
-            )
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.getWriter().write("Unauthorized");
-                })
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .deleteCookies("JSESSIONID")
+                        .permitAll())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/operations/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
+                        .requestMatchers("/api/buses/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
+                        .requestMatchers("/api/routes/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
+                        .anyRequest().authenticated())
+                .exceptionHandling(exceptions -> exceptions
+                        // This entry point is triggered when an unauthenticated user tries to access a
+                        // protected resource.
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"error\": \"Unauthorized\", \"message\": \"Authentication is required to access this resource.\"}");
+                        }));
 
         return http.build();
     }

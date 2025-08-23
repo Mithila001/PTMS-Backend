@@ -62,22 +62,31 @@ public class DataLoader {
         }
         
         // TEMPORARY: Ensure the password for a known user is set correctly
-        updateKnownUserPassword(); // <-- ADD THIS LINE
+       // updateKnownUserPassword(); // <-- ADD THIS LINE
 
         logger.info("Default roles and users initialization complete.");
+
+        userRepository.findByUsername("admin").ifPresent(user -> {
+            String rawPassword = "adminpass";
+            if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+                user.setPassword(passwordEncoder.encode(rawPassword));
+                userRepository.save(user);
+                logger.warn("Corrected stale password for user: 'admin'.");
+            }
+        });
     }
     
-    // TEMPORARY METHOD: Update a specific user's password directly after creation
-    private void updateKnownUserPassword() {
-        Optional<User> userOptional = userRepository.findByUsername("admin");
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            // This is a known password that should work
-            user.setPassword(passwordEncoder.encode("adminpass")); 
-            userRepository.save(user);
-            logger.info("Forced password update for user 'admin' to 'adminpass'.");
-        }
-    }
+    // // TEMPORARY METHOD: Update a specific user's password directly after creation
+    // private void updateKnownUserPassword() {
+    //     Optional<User> userOptional = userRepository.findByUsername("admin");
+    //     if (userOptional.isPresent()) {
+    //         User user = userOptional.get();
+    //         // This is a known password that should work
+    //         user.setPassword(passwordEncoder.encode("adminpass")); 
+    //         userRepository.save(user);
+    //         logger.info("Forced password update for user 'admin' to 'adminpass'.");
+    //     }
+    // }
 
     private Role findOrCreateRole(String roleName) {
         Optional<Role> role = roleRepository.findByName(roleName);
