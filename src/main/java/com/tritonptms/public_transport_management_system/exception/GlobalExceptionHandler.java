@@ -37,21 +37,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation failed",
                 null,
-                errors
-        );
-
+                errors);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<BaseResponse<String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        BaseResponse<String> errorResponse = new BaseResponse<>(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                null,
+                null);
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<BaseResponse<String>> handleRuntimeException(RuntimeException ex) {
         BaseResponse<String> errorResponse = new BaseResponse<>(
-            HttpStatus.BAD_REQUEST.value(),
-            "Invalid request: " + ex.getMessage(),
-            null,
-            null
-        );
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid request: " + ex.getMessage(),
+                null,
+                null);
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }

@@ -1,5 +1,6 @@
 package com.tritonptms.public_transport_management_system.service;
 
+import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import com.tritonptms.public_transport_management_system.model.ActionLog;
 import com.tritonptms.public_transport_management_system.model.ActionLog.ActionType;
 import com.tritonptms.public_transport_management_system.repository.ActionLogRepository;
@@ -32,5 +33,24 @@ public class ActionLogService {
 
     public List<ActionLog> getAllLogs() {
         return actionLogRepository.findAll();
+    }
+
+    public List<ActionLog> getLogsByEntityType(String entityType) {
+        // return actionLogRepository.findByEntityTypeOrderByTimestampDesc(entityType);
+        List<ActionLog> logs = actionLogRepository.findByEntityTypeOrderByTimestampDesc(entityType);
+        if (logs.isEmpty()) {
+            throw new ResourceNotFoundException("No logs found for entity type: " + entityType);
+        }
+        return logs;
+    }
+
+    public List<ActionLog> getLogsByUsernameAndEntityType(String username, String entityType) {
+        List<ActionLog> logs = actionLogRepository.findByUsernameAndEntityTypeOrderByTimestampDesc(username,
+                entityType);
+        if (logs.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    "No logs found for username '" + username + "' and entity type '" + entityType + "'");
+        }
+        return logs;
     }
 }
