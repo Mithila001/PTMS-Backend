@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +22,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // Keep this
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +62,21 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authManager)
+            throws Exception {
+        JsonUsernamePasswordAuthenticationFilter jsonFilter = new JsonUsernamePasswordAuthenticationFilter();
+        jsonFilter.setAuthenticationManager(authManager);
+        jsonFilter.setFilterProcessesUrl("/api/auth/login");
+        jsonFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
+        jsonFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
+        http.addFilterAt(jsonFilter, UsernamePasswordAuthenticationFilter.class);
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -71,12 +87,19 @@ public class SecurityConfig {
                         .permitAll())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/logs/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/operations/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .requestMatchers("/api/buses/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .requestMatchers("/api/routes/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .anyRequest().authenticated())
+                .formLogin(formLogin -> formLogin
+                        .loginProcessingUrl("/api/auth/login") // This is where Spring Security will handle the POST
+                                                               // request
+                        .successHandler(authenticationSuccessHandler())
+                        .failureHandler(authenticationFailureHandler())
+                        .permitAll())
                 .exceptionHandling(exceptions -> exceptions
                         // This entry point is triggered when an unauthenticated user tries to access a
                         // protected resource.

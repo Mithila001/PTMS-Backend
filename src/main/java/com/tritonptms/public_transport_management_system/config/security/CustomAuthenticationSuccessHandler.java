@@ -8,8 +8,12 @@ import com.tritonptms.public_transport_management_system.dto.auth.UserInfoRespon
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,22 +28,31 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
-        // Get the authenticated user principal from the SecurityContext
-        // We know this is our custom User object because of our UserDetailsServiceImpl
-        // changes
+
+        // ensure SecurityContext is available
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // create session and store SecurityContext so JSESSIONID is set and persisted
+        HttpSession session = request.getSession(true);
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                SecurityContextHolder.getContext());
+
+        // build response DTO (keep your existing logic)
         User user = (User) authentication.getPrincipal();
-
-        // Convert the user's roles from a Set<Role> to a List<String>
         List<String> roles = user.getRoles().stream()
-                .map(role -> role.getName()) // Map each Role object to its name String
+                .map(role -> role.getName())
                 .collect(Collectors.toList());
-
-        // Create a DTO to send back to the frontend
         UserInfoResponse userInfo = new UserInfoResponse(user.getId(), user.getUsername(), roles);
 
-        // Set response headers and write JSON
+        // debug: print session id (remove later)
+        System.out.println("Login success. Session id: " + session.getId());
+
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write(objectMapper.writeValueAsString(userInfo));
+
+        System.out.println(">> Set-Cookie header check: " + response.getHeader("Set-Cookie"));
+
     }
+
 }

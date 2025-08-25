@@ -45,24 +45,27 @@ public class AuthController {
                 this.encoder = encoder;
         }
 
-        @PostMapping("/login")
-        public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
-                Authentication authentication = authenticationManager.authenticate(
-                                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
-                                                loginRequest.getPassword()));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                // Ensure session is created and SecurityContext is stored so JSESSIONID is set
-                HttpSession session = request.getSession(true);
-                session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                                SecurityContextHolder.getContext());
+        // @PostMapping("/login")
+        // public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest,
+        // HttpServletRequest request) {
+        // Authentication authentication = authenticationManager.authenticate(
+        // new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
+        // loginRequest.getPassword()));
+        // SecurityContextHolder.getContext().setAuthentication(authentication);
+        // // Ensure session is created and SecurityContext is stored so JSESSIONID is
+        // set
+        // HttpSession session = request.getSession(true);
+        // session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+        // SecurityContextHolder.getContext());
 
-                User user = (User) authentication.getPrincipal();
-                List<String> roles = user.getRoles().stream()
-                                .map(role -> role.getName())
-                                .collect(Collectors.toList());
+        // User user = (User) authentication.getPrincipal();
+        // List<String> roles = user.getRoles().stream()
+        // .map(role -> role.getName())
+        // .collect(Collectors.toList());
 
-                return ResponseEntity.ok(new UserInfoResponse(user.getId(), user.getUsername(), roles));
-        }
+        // return ResponseEntity.ok(new UserInfoResponse(user.getId(),
+        // user.getUsername(), roles));
+        // }
 
         /**
          * Retrieves the current authenticated user's information.

@@ -43,7 +43,6 @@ public class RouteController {
 
     @PostMapping
     public ResponseEntity<RouteDto> createRoute(@Valid @RequestBody RouteDto routeDto) {
-        // Service returns entity, we convert it back to DTO for the response
         Route newRoute = routeService.createRoute(routeDto);
         RouteDto newRouteDto = new RouteDto();
         newRouteDto.setRouteNumber(newRoute.getRouteNumber());
@@ -55,7 +54,6 @@ public class RouteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RouteDto> updateRoute(@PathVariable Long id, @Valid @RequestBody RouteDto routeDto) {
-        // Service returns entity, we convert it back to DTO for the response
         Route updatedRoute = routeService.updateRoute(id, routeDto);
         RouteDto updatedRouteDto = new RouteDto();
         updatedRouteDto.setRouteNumber(updatedRoute.getRouteNumber());

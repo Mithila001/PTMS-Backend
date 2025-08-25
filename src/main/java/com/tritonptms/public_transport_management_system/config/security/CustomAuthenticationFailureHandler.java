@@ -20,11 +20,12 @@ public class CustomAuthenticationFailureHandler implements AuthenticationFailure
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException exception) throws IOException, ServletException {
         // Create a JSON object for the error response
         Map<String, Object> errorDetails = new HashMap<>();
         errorDetails.put("error", "Unauthorized");
-        errorDetails.put("message", "Invalid username or password");
+        errorDetails.put("message", "Invalid username or password1");
 
         // Set response headers and write JSON
         response.setContentType("application/json");
