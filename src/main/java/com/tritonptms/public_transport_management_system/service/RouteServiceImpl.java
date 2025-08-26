@@ -36,7 +36,8 @@ public class RouteServiceImpl implements RouteService {
         this.objectMapper = new ObjectMapper();
     }
 
-    private RouteDto convertToDto(Route route) {
+    @Override
+    public RouteDto convertToDto(Route route) {
         RouteDto routeDto = new RouteDto();
         routeDto.setId(route.getId());
         routeDto.setRouteNumber(route.getRouteNumber());

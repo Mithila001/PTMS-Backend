@@ -20,4 +20,6 @@ public interface RouteService {
 
     void deleteRoute(Long id);
 
+    RouteDto convertToDto(Route route);
+
 }
