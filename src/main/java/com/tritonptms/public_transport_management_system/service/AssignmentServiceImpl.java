@@ -2,6 +2,7 @@ package com.tritonptms.public_transport_management_system.service;
 
 import com.tritonptms.public_transport_management_system.dto.AssignmentDto;
 import com.tritonptms.public_transport_management_system.model.*;
+import com.tritonptms.public_transport_management_system.model.enums.assignment.AssignmentStatus;
 import com.tritonptms.public_transport_management_system.repository.*;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,12 +72,16 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
         if (assignment.getBus() != null) {
             dto.setBusId(assignment.getBus().getId());
+            dto.setBusRegistrationNumber(assignment.getBus().getRegistrationNumber());
         }
         if (assignment.getDriver() != null) {
             dto.setDriverId(assignment.getDriver().getId());
+            dto.setDriverName(assignment.getDriver().getFirstName() + " " + assignment.getDriver().getLastName());
         }
         if (assignment.getConductor() != null) {
             dto.setConductorId(assignment.getConductor().getId());
+            dto.setConductorName(
+                    assignment.getConductor().getFirstName() + " " + assignment.getConductor().getLastName());
         }
 
         return dto;
@@ -119,5 +124,13 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         return entity;
+    }
+
+    @Override
+    public List<AssignmentDto> getAssignmentsByStatus(AssignmentStatus status) {
+        return assignmentRepository.findByStatus(status)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 }

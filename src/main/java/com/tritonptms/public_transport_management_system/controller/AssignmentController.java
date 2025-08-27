@@ -1,7 +1,9 @@
 package com.tritonptms.public_transport_management_system.controller;
 
 import com.tritonptms.public_transport_management_system.model.Assignment;
+import com.tritonptms.public_transport_management_system.model.enums.assignment.AssignmentStatus;
 import com.tritonptms.public_transport_management_system.service.AssignmentService;
+import com.tritonptms.public_transport_management_system.utils.BaseResponse;
 import com.tritonptms.public_transport_management_system.dto.AssignmentDto;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -53,5 +55,11 @@ public class AssignmentController {
     public ResponseEntity<Void> deleteAssignment(@PathVariable Long id) {
         assignmentService.deleteAssignment(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<AssignmentDto>> getActiveAssignments() {
+        List<AssignmentDto> assignments = assignmentService.getAssignmentsByStatus(AssignmentStatus.SCHEDULED);
+        return new ResponseEntity<>(assignments, HttpStatus.OK);
     }
 }

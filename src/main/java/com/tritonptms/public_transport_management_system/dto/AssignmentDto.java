@@ -30,6 +30,10 @@ public class AssignmentDto {
     @NotNull(message = "Status is mandatory")
     private AssignmentStatus status;
 
+    private String driverName;
+    private String conductorName;
+    private String busRegistrationNumber;
+
     // Getters and Setters...
     public Long getId() {
         return id;
@@ -102,4 +106,29 @@ public class AssignmentDto {
     public void setStatus(AssignmentStatus status) {
         this.status = status;
     }
+
+    public String getDriverName() {
+        return driverName;
+    }
+
+    public void setDriverName(String driverName) {
+        this.driverName = driverName;
+    }
+
+    public String getConductorName() {
+        return conductorName;
+    }
+
+    public void setConductorName(String conductorName) {
+        this.conductorName = conductorName;
+    }
+
+    public String getBusRegistrationNumber() {
+        return busRegistrationNumber;
+    }
+
+    public void setBusRegistrationNumber(String busRegistrationNumber) {
+        this.busRegistrationNumber = busRegistrationNumber;
+    }
+
 }
