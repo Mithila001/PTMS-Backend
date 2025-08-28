@@ -5,6 +5,7 @@ package com.tritonptms.public_transport_management_system.config;
 import com.tritonptms.public_transport_management_system.model.Role;
 import com.tritonptms.public_transport_management_system.model.User;
 import com.tritonptms.public_transport_management_system.model.enums.users.ERole;
+import com.tritonptms.public_transport_management_system.repository.AssignmentRepository;
 import com.tritonptms.public_transport_management_system.repository.RoleRepository;
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -25,11 +26,14 @@ public class DataLoader {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final BusDataLoader busDataLoader;
 
-    public DataLoader(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public DataLoader(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
+            BusDataLoader busDataLoader, AssignmentRepository assignmentRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.busDataLoader = busDataLoader;
     }
 
     @PostConstruct
@@ -60,9 +64,9 @@ public class DataLoader {
         } else {
             logger.info("Default OPERATIONS_MANAGER user already exists.");
         }
-        
+
         // TEMPORARY: Ensure the password for a known user is set correctly
-       // updateKnownUserPassword(); // <-- ADD THIS LINE
+        // updateKnownUserPassword(); // <-- ADD THIS LINE
 
         logger.info("Default roles and users initialization complete.");
 
@@ -74,18 +78,22 @@ public class DataLoader {
                 logger.warn("Corrected stale password for user: 'admin'.");
             }
         });
+
+        // Load default bus records
+        busDataLoader.createBusRecords();
     }
-    
-    // // TEMPORARY METHOD: Update a specific user's password directly after creation
+
+    // // TEMPORARY METHOD: Update a specific user's password directly after
+    // creation
     // private void updateKnownUserPassword() {
-    //     Optional<User> userOptional = userRepository.findByUsername("admin");
-    //     if (userOptional.isPresent()) {
-    //         User user = userOptional.get();
-    //         // This is a known password that should work
-    //         user.setPassword(passwordEncoder.encode("adminpass")); 
-    //         userRepository.save(user);
-    //         logger.info("Forced password update for user 'admin' to 'adminpass'.");
-    //     }
+    // Optional<User> userOptional = userRepository.findByUsername("admin");
+    // if (userOptional.isPresent()) {
+    // User user = userOptional.get();
+    // // This is a known password that should work
+    // user.setPassword(passwordEncoder.encode("adminpass"));
+    // userRepository.save(user);
+    // logger.info("Forced password update for user 'admin' to 'adminpass'.");
+    // }
     // }
 
     private Role findOrCreateRole(String roleName) {

@@ -24,13 +24,11 @@ import com.tritonptms.public_transport_management_system.model.Vehicle.FuelType;
 @Transactional
 public class BusControllerIntegrationTest {
 
-     @Autowired
+    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private BusRepository busRepository;
-
-    
 
     @Test
     void whenPostBus_thenStatus201AndBusIsReturned() throws Exception {
@@ -43,12 +41,12 @@ public class BusControllerIntegrationTest {
         bus.setActive(true); // Corrected: Add the missing isActive field
         bus.setSeatingCapacity(50);
         bus.setStandingCapacity(15);
-        bus.setBusType(Bus.BusType.NORMAL);
-        bus.setNtcPermitNumber(1234567890);
+        bus.setComfortType(Bus.ComfortType.NORMAL);
+        bus.setNtcPermitNumber((long) 1234567890);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/buses")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(bus)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(bus)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.registrationNumber").value("NB-9999"));
     }
@@ -63,10 +61,10 @@ public class BusControllerIntegrationTest {
         bus.setYearOfManufacture(2022);
         bus.setFuelType(Bus.FuelType.DIESEL);
         bus.setActive(true);
-        bus.setBusType(Bus.BusType.NORMAL);
+        bus.setComfortType(Bus.ComfortType.NORMAL);
         bus.setSeatingCapacity(50);
         bus.setStandingCapacity(15);
-        bus.setNtcPermitNumber(1234567890);
+        bus.setNtcPermitNumber((long) 1234567890);
         busRepository.save(bus);
 
         // Then, retrieve it via the API endpoint
@@ -86,12 +84,12 @@ public class BusControllerIntegrationTest {
         bus.setActive(true);
         bus.setSeatingCapacity(0); // This is an invalid value
         bus.setStandingCapacity(-5); // This is another invalid value
-        bus.setBusType(null); // This is also an invalid value
-        bus.setNtcPermitNumber(123); // Invalid NTC permit number
+        bus.setComfortType(null); // This is also an invalid value
+        bus.setNtcPermitNumber((long) 123); // Invalid NTC permit number
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/buses")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(bus)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(bus)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors").exists())
                 .andExpect(jsonPath("$.errors.seatingCapacity").value("Seating capacity must be at least 1"))
@@ -99,5 +97,5 @@ public class BusControllerIntegrationTest {
                 .andExpect(jsonPath("$.errors.busType").value("Bus type is mandatory"))
                 .andExpect(jsonPath("$.errors.ntcPermitNumber").value("NTC permit number must be at least 10 digits"));
     }
-    
+
 }
