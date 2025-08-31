@@ -92,9 +92,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/logs/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/enums/**").permitAll()
+                        .requestMatchers("/api/buses/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/operations/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
-                        .requestMatchers("/api/buses/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
+                        // .requestMatchers("/api/buses/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .requestMatchers("/api/routes/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .anyRequest().authenticated())
                 .formLogin(formLogin -> formLogin

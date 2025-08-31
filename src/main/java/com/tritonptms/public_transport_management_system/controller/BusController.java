@@ -1,6 +1,7 @@
 package com.tritonptms.public_transport_management_system.controller;
 
 import com.tritonptms.public_transport_management_system.model.Bus;
+import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
 import com.tritonptms.public_transport_management_system.service.BusService;
 
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ public class BusController {
 
     // GET /api/buses/{id}: Retrieves a single bus by its ID
     @GetMapping("/{id}")
-    public ResponseEntity<Bus> getBusById( @PathVariable Long id) {
+    public ResponseEntity<Bus> getBusById(@PathVariable Long id) {
         Optional<Bus> bus = busService.getBusById(id);
         return bus.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -61,5 +62,14 @@ public class BusController {
         busService.deleteBus(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-    
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Bus>> searchBuses(
+            @RequestParam(required = false) String registrationNumber,
+            @RequestParam(required = false) ServiceType serviceType) {
+
+        List<Bus> buses = busService.searchBuses(registrationNumber, serviceType);
+        return new ResponseEntity<>(buses, HttpStatus.OK);
+    }
+
 }

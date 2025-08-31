@@ -1,8 +1,12 @@
 package com.tritonptms.public_transport_management_system.service;
 
 import com.tritonptms.public_transport_management_system.model.Bus;
+import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
 import com.tritonptms.public_transport_management_system.repository.BusRepository;
+import com.tritonptms.public_transport_management_system.service.specification.BusSpecification;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,5 +42,13 @@ public class BusServiceImpl implements BusService {
     @Override
     public void deleteBus(Long id) {
         busRepository.deleteById(id);
+    }
+
+    // Search method
+    @Override
+    public List<Bus> searchBuses(String registrationNumber, ServiceType serviceType) {
+        return busRepository.findAll(Specification.allOf(
+                BusSpecification.hasRegistrationNumber(registrationNumber),
+                BusSpecification.hasServiceType(serviceType)));
     }
 }
