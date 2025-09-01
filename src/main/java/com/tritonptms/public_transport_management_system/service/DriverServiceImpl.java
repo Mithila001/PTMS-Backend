@@ -3,6 +3,7 @@ package com.tritonptms.public_transport_management_system.service;
 import com.tritonptms.public_transport_management_system.model.Driver;
 import com.tritonptms.public_transport_management_system.repository.DriverRepository;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class DriverServiceImpl implements DriverService {
         existingDriver.setAddress(driverDetails.getAddress());
         existingDriver.setDateJoined(driverDetails.getDateJoined());
         existingDriver.setIsCurrentEmployee(driverDetails.getIsCurrentEmployee());
-        
+
         // Update the driver-specific fields
         existingDriver.setDrivingLicenseNumber(driverDetails.getDrivingLicenseNumber());
         existingDriver.setLicenseExpirationDate(driverDetails.getLicenseExpirationDate());
@@ -67,4 +68,5 @@ public class DriverServiceImpl implements DriverService {
     public void deleteDriver(Long id) {
         driverRepository.deleteById(id);
     }
+
 }

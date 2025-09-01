@@ -17,4 +17,5 @@ public interface DriverService {
     Driver updateDriver(Long id, Driver driverDetails);
 
     void deleteDriver(Long id);
+
 }
