@@ -1,6 +1,7 @@
 package com.tritonptms.public_transport_management_system.controller;
 
 import com.tritonptms.public_transport_management_system.model.ScheduledTrip;
+import com.tritonptms.public_transport_management_system.model.enums.route.Direction;
 import com.tritonptms.public_transport_management_system.service.ScheduledTripService;
 import com.tritonptms.public_transport_management_system.dto.ScheduledTripDto;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/scheduled-trips")
@@ -53,5 +55,17 @@ public class ScheduledTripController {
     public ResponseEntity<Void> deleteScheduledTrip(@PathVariable Long id) {
         scheduledTripService.deleteScheduledTrip(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/search-trips")
+    public ResponseEntity<List<ScheduledTripDto>> searchScheduledTrips(
+            @RequestParam(required = false) String routeNumber,
+            @RequestParam(required = false) Direction direction) {
+
+        List<ScheduledTrip> scheduledTrips = scheduledTripService.searchScheduledTrips(routeNumber, direction);
+        List<ScheduledTripDto> scheduledTripDtos = scheduledTrips.stream()
+                .map(scheduledTripService::convertToDto)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(scheduledTripDtos, HttpStatus.OK);
     }
 }

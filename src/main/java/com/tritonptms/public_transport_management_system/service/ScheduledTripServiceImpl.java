@@ -3,10 +3,13 @@ package com.tritonptms.public_transport_management_system.service;
 import com.tritonptms.public_transport_management_system.dto.ScheduledTripDto;
 import com.tritonptms.public_transport_management_system.model.Route;
 import com.tritonptms.public_transport_management_system.model.ScheduledTrip;
+import com.tritonptms.public_transport_management_system.model.enums.route.Direction;
 import com.tritonptms.public_transport_management_system.repository.ScheduledTripRepository;
+import com.tritonptms.public_transport_management_system.service.specification.ScheduledTripSpecification;
 import com.tritonptms.public_transport_management_system.repository.RouteRepository;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -88,4 +91,14 @@ public class ScheduledTripServiceImpl implements ScheduledTripService {
 
         return entity;
     }
+
+    @Override
+    public List<ScheduledTrip> searchScheduledTrips(String routeNumber, Direction direction) {
+        Specification<ScheduledTrip> spec = Specification.allOf(
+                ScheduledTripSpecification.hasRouteNumber(routeNumber),
+                ScheduledTripSpecification.hasDirection(direction));
+
+        return scheduledTripRepository.findAll(spec);
+    }
+
 }
