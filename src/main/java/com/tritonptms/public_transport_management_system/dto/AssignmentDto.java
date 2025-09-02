@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 public class AssignmentDto {
     private Long id;
 
-    @NotNull(message = "Scheduled trip is mandatory")
-    private ScheduledTripDto scheduledTrip;
+    @NotNull(message = "Scheduled trip ID is mandatory")
+    private Long scheduledTripId;
 
     @NotNull(message = "Bus ID is mandatory")
     private Long busId;
@@ -43,12 +43,12 @@ public class AssignmentDto {
         this.id = id;
     }
 
-    public ScheduledTripDto getScheduledTrip() {
-        return scheduledTrip;
+    public Long getScheduledTripId() {
+        return scheduledTripId;
     }
 
-    public void setScheduledTrip(ScheduledTripDto scheduledTrip) {
-        this.scheduledTrip = scheduledTrip;
+    public void setScheduledTripId(Long scheduledTripId) {
+        this.scheduledTripId = scheduledTripId;
     }
 
     public Long getBusId() {

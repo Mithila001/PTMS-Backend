@@ -2,10 +2,15 @@
 
 package com.tritonptms.public_transport_management_system.config;
 
+import com.tritonptms.public_transport_management_system.config.dataLoaders.AssignmentDataLoader;
+import com.tritonptms.public_transport_management_system.config.dataLoaders.BusDataLoader;
+import com.tritonptms.public_transport_management_system.config.dataLoaders.ConductorDataLoader;
+import com.tritonptms.public_transport_management_system.config.dataLoaders.DriverDataLoader;
+import com.tritonptms.public_transport_management_system.config.dataLoaders.RouteDataLoader;
+import com.tritonptms.public_transport_management_system.config.dataLoaders.ScheduledTripDataLoader;
 import com.tritonptms.public_transport_management_system.model.Role;
 import com.tritonptms.public_transport_management_system.model.User;
 import com.tritonptms.public_transport_management_system.model.enums.users.ERole;
-import com.tritonptms.public_transport_management_system.repository.AssignmentRepository;
 import com.tritonptms.public_transport_management_system.repository.RoleRepository;
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -27,13 +32,26 @@ public class DataLoader {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final BusDataLoader busDataLoader;
+    private final RouteDataLoader routeDataLoader;
+    private final ScheduledTripDataLoader scheduledTripDataLoader;
+    private final DriverDataLoader driverDataLoader;
+    private final ConductorDataLoader conductorDataLoader;
+    private final AssignmentDataLoader assignmentDataLoader;
 
+    // Use a single, clean constructor for dependency injection
     public DataLoader(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
-            BusDataLoader busDataLoader, AssignmentRepository assignmentRepository) {
+            BusDataLoader busDataLoader, RouteDataLoader routeDataLoader,
+            ScheduledTripDataLoader scheduledTripDataLoader, DriverDataLoader driverDataLoader,
+            ConductorDataLoader conductorDataLoader, AssignmentDataLoader assignmentDataLoader) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.busDataLoader = busDataLoader;
+        this.routeDataLoader = routeDataLoader;
+        this.scheduledTripDataLoader = scheduledTripDataLoader;
+        this.driverDataLoader = driverDataLoader;
+        this.conductorDataLoader = conductorDataLoader;
+        this.assignmentDataLoader = assignmentDataLoader;
     }
 
     @PostConstruct
@@ -65,9 +83,6 @@ public class DataLoader {
             logger.info("Default OPERATIONS_MANAGER user already exists.");
         }
 
-        // TEMPORARY: Ensure the password for a known user is set correctly
-        // updateKnownUserPassword(); // <-- ADD THIS LINE
-
         logger.info("Default roles and users initialization complete.");
 
         userRepository.findByUsername("admin").ifPresent(user -> {
@@ -79,22 +94,16 @@ public class DataLoader {
             }
         });
 
-        // Load default bus records
-        busDataLoader.createBusRecords();
-    }
+        // Centralized configuration for data loaders
+        boolean shouldRecreateData = true;
 
-    // // TEMPORARY METHOD: Update a specific user's password directly after
-    // creation
-    // private void updateKnownUserPassword() {
-    // Optional<User> userOptional = userRepository.findByUsername("admin");
-    // if (userOptional.isPresent()) {
-    // User user = userOptional.get();
-    // // This is a known password that should work
-    // user.setPassword(passwordEncoder.encode("adminpass"));
-    // userRepository.save(user);
-    // logger.info("Forced password update for user 'admin' to 'adminpass'.");
-    // }
-    // }
+        busDataLoader.createBusRecords(shouldRecreateData, 10);
+        routeDataLoader.createRouteRecords(shouldRecreateData, 20);
+        scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
+        driverDataLoader.createDriverRecords(shouldRecreateData, 20);
+        conductorDataLoader.createConductorRecords(shouldRecreateData, 20);
+        assignmentDataLoader.createAssignmentRecords(shouldRecreateData, 30);
+    }
 
     private Role findOrCreateRole(String roleName) {
         Optional<Role> role = roleRepository.findByName(roleName);
