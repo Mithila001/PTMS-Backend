@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -93,9 +94,19 @@ public class ScheduledTripServiceImpl implements ScheduledTripService {
     }
 
     @Override
-    public List<ScheduledTrip> searchScheduledTrips(String routeNumber, Direction direction) {
+    public List<ScheduledTrip> searchScheduledTrips(String scheduledTripId, Direction direction) {
+        Long id = null;
+        try {
+            if (scheduledTripId != null && !scheduledTripId.isEmpty()) {
+                id = Long.parseLong(scheduledTripId);
+            }
+        } catch (NumberFormatException e) {
+
+            // If parsing fails, return empty list
+            return Collections.emptyList();
+        }
         Specification<ScheduledTrip> spec = Specification.allOf(
-                ScheduledTripSpecification.hasRouteNumber(routeNumber),
+                ScheduledTripSpecification.hasScheduledTripId(id),
                 ScheduledTripSpecification.hasDirection(direction));
 
         return scheduledTripRepository.findAll(spec);

@@ -68,4 +68,14 @@ public class RouteController {
         routeService.deleteRoute(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Route>> searchRoutes(
+            @RequestParam(required = false) String routeNumber,
+            @RequestParam(required = false) String origin,
+            @RequestParam(required = false) String destination) {
+
+        List<Route> routes = routeService.searchRoutes(routeNumber, origin, destination);
+        return new ResponseEntity<>(routes, HttpStatus.OK);
+    }
 }

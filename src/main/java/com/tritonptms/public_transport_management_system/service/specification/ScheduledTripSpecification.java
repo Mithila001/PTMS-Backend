@@ -10,19 +10,12 @@ import java.time.LocalTime;
 
 public class ScheduledTripSpecification {
 
-    public static Specification<ScheduledTrip> hasRouteNumber(String routeNumber) {
-        // Return null if the search term is empty or null, so it is ignored.
-        if (!StringUtils.hasText(routeNumber)) {
+    public static Specification<ScheduledTrip> hasScheduledTripId(Long scheduledTripId) {
+        // Return null if the search term is null, so it is ignored.
+        if (scheduledTripId == null) {
             return null;
         }
-        return (root, query, criteriaBuilder) -> {
-            // Join the ScheduledTrip with the Route entity.
-            Join<ScheduledTrip, Route> routeJoin = root.join("route");
-            // Perform a case-insensitive search on the routeNumber.
-            return criteriaBuilder.like(
-                    criteriaBuilder.lower(routeJoin.get("routeNumber")),
-                    "%" + routeNumber.toLowerCase() + "%");
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), scheduledTripId);
     }
 
     public static Specification<ScheduledTrip> hasDirection(Direction direction) {

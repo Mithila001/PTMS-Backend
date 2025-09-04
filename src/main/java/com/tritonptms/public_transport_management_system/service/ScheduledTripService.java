@@ -19,5 +19,5 @@ public interface ScheduledTripService {
 
     ScheduledTrip convertToEntity(ScheduledTripDto scheduledTripDto);
 
-    List<ScheduledTrip> searchScheduledTrips(String routeNumber, Direction direction);
+    List<ScheduledTrip> searchScheduledTrips(String scheduledTripId, Direction direction);
 }

@@ -8,6 +8,7 @@ import com.tritonptms.public_transport_management_system.exception.ResourceNotFo
 import com.tritonptms.public_transport_management_system.model.ActionLog.ActionType;
 import com.tritonptms.public_transport_management_system.model.Route;
 import com.tritonptms.public_transport_management_system.repository.RouteRepository;
+import com.tritonptms.public_transport_management_system.service.specification.RouteSpecification;
 import com.tritonptms.public_transport_management_system.utils.ObjectComparisonUtil;
 
 import org.locationtech.jts.geom.GeometryFactory;
@@ -15,6 +16,7 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -164,5 +166,13 @@ public class RouteServiceImpl implements RouteService {
         } catch (JsonProcessingException e) {
             System.err.println("Error logging route deletion: " + e.getMessage());
         }
+    }
+
+    @Override
+    public List<Route> searchRoutes(String routeNumber, String origin, String destination) {
+        return routeRepository.findAll(Specification.allOf(
+                RouteSpecification.hasRouteNumber(routeNumber),
+                RouteSpecification.hasOrigin(origin),
+                RouteSpecification.hasDestination(destination)));
     }
 }

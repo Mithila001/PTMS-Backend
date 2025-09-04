@@ -22,4 +22,6 @@ public interface RouteService {
 
     RouteDto convertToDto(Route route);
 
+    List<Route> searchRoutes(String routeNumber, String origin, String destination);
+
 }
