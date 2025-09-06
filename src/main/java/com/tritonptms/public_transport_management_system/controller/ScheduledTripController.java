@@ -59,10 +59,11 @@ public class ScheduledTripController {
 
     @GetMapping("/search-trips")
     public ResponseEntity<List<ScheduledTripDto>> searchScheduledTrips(
-            @RequestParam(required = false) String scheduledTripId,
+            @RequestParam(required = false) String scheduledTripRouteNumber,
             @RequestParam(required = false) Direction direction) {
 
-        List<ScheduledTrip> scheduledTrips = scheduledTripService.searchScheduledTrips(scheduledTripId, direction);
+        List<ScheduledTrip> scheduledTrips = scheduledTripService.searchScheduledTrips(scheduledTripRouteNumber,
+                direction);
         List<ScheduledTripDto> scheduledTripDtos = scheduledTrips.stream()
                 .map(scheduledTripService::convertToDto)
                 .collect(Collectors.toList());

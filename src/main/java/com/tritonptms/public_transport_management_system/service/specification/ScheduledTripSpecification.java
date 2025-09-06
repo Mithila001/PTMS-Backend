@@ -25,4 +25,20 @@ public class ScheduledTripSpecification {
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("direction"), direction);
     }
+
+    public static Specification<ScheduledTrip> hasRouteNumber(String routeNumber) {
+        // Return null if the search term is empty or null.
+        if (!StringUtils.hasText(routeNumber)) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> {
+            // Join the ScheduledTrip entity with the Route entity.
+            Join<ScheduledTrip, Route> routeJoin = root.join("route");
+            // Use criteriaBuilder.like to perform a case-insensitive search on the
+            // routeNumber.
+            return criteriaBuilder.like(
+                    criteriaBuilder.lower(routeJoin.get("routeNumber")),
+                    "%" + routeNumber.toLowerCase() + "%");
+        };
+    }
 }

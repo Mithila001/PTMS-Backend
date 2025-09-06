@@ -94,19 +94,20 @@ public class ScheduledTripServiceImpl implements ScheduledTripService {
     }
 
     @Override
-    public List<ScheduledTrip> searchScheduledTrips(String scheduledTripId, Direction direction) {
-        Long id = null;
-        try {
-            if (scheduledTripId != null && !scheduledTripId.isEmpty()) {
-                id = Long.parseLong(scheduledTripId);
-            }
-        } catch (NumberFormatException e) {
+    public List<ScheduledTrip> searchScheduledTrips(String scheduledTripRouteNumber, Direction direction) {
+        // Long routeNumber = null;
+        // try {
+        // if (scheduledTripRouteNumber != null && !scheduledTripRouteNumber.isEmpty())
+        // {
+        // routeNumber = Long.parseLong(scheduledTripRouteNumber);
+        // }
+        // } catch (NumberFormatException e) {
 
-            // If parsing fails, return empty list
-            return Collections.emptyList();
-        }
+        // // If parsing fails, return empty list
+        // return Collections.emptyList();
+        // }
         Specification<ScheduledTrip> spec = Specification.allOf(
-                ScheduledTripSpecification.hasScheduledTripId(id),
+                ScheduledTripSpecification.hasRouteNumber(scheduledTripRouteNumber),
                 ScheduledTripSpecification.hasDirection(direction));
 
         return scheduledTripRepository.findAll(spec);
