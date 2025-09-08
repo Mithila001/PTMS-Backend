@@ -1,5 +1,7 @@
 package com.tritonptms.public_transport_management_system.model;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +15,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@Audited
 @Table(name = "vehicles")
 public abstract class Vehicle {
 
@@ -31,11 +34,11 @@ public abstract class Vehicle {
 
     @Column(nullable = false)
     private int yearOfManufacture;
-    
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private FuelType fuelType;
-    
+
     @Column(nullable = false)
     private boolean isActive;
 
@@ -87,7 +90,7 @@ public abstract class Vehicle {
     public void setYearOfManufacture(int yearOfManufacture) {
         this.yearOfManufacture = yearOfManufacture;
     }
-    
+
     public FuelType getFuelType() {
         return fuelType;
     }
@@ -103,5 +106,5 @@ public abstract class Vehicle {
     public void setActive(boolean active) {
         isActive = active;
     }
-    
+
 }

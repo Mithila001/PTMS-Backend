@@ -49,10 +49,7 @@ public class BusController {
     // PUT /api/buses/{id}: Updates an existing bus
     @PutMapping("/{id}")
     public ResponseEntity<Bus> updateBus(@PathVariable Long id, @Valid @RequestBody Bus busDetails) {
-        // Here you would add logic to check if the bus with the ID exists
-        // and then update it with the new details.
-        busDetails.setId(id);
-        Bus updatedBus = busService.saveBus(busDetails);
+        Bus updatedBus = busService.updateBus(id, busDetails);
         return new ResponseEntity<>(updatedBus, HttpStatus.OK);
     }
 

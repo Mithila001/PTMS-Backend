@@ -10,10 +10,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import org.hibernate.envers.Audited;
+
 import com.tritonptms.public_transport_management_system.model.Vehicle;
 import com.tritonptms.public_transport_management_system.model.enums.bus.BusType;
 
 @Entity
+@Audited
 @Table(name = "buses")
 public class Bus extends Vehicle {
 
@@ -109,7 +112,7 @@ public class Bus extends Vehicle {
         this.serviceType = serviceType;
     }
 
-    // ===========
+    // Vehicle Parent ===========
 
     public Long getId() {
         return super.getId();

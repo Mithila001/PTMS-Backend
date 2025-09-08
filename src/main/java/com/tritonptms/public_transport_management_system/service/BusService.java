@@ -13,6 +13,8 @@ public interface BusService {
 
     Bus saveBus(Bus bus);
 
+    Bus updateBus(Long id, Bus busDetails); // <-- Added this method
+
     void deleteBus(Long id);
 
     List<Bus> searchBuses(String registrationNumber, ServiceType serviceType);
