@@ -1,12 +1,20 @@
 package com.tritonptms.public_transport_management_system.model;
 
+import com.tritonptms.public_transport_management_system.dto.ChangeDetailDto;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "action_logs")
@@ -18,11 +26,7 @@ public class ActionLog {
     private Long id;
 
     @Column(nullable = false, updatable = false)
-    private String username;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false)
-    private ActionType actionType;
+    private Long userId;
 
     @Column(nullable = false, updatable = false)
     private String entityType;
@@ -30,24 +34,31 @@ public class ActionLog {
     @Column(updatable = false)
     private Long entityId;
 
+    @Column(nullable = false, updatable = false, length = 10)
+    private String revisionType;
+
+    @Column(nullable = false, updatable = false)
+    private String summary;
+
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb")
-    private String details;
+    private List<ChangeDetailDto> changes;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp;
 
-    // A default constructor is required by JPA
     public ActionLog() {
     }
 
-    public ActionLog(String username, ActionType actionType, String entityType, Long entityId, String details) {
-        this.username = username;
-        this.actionType = actionType;
+    public ActionLog(Long userId, String entityType, Long entityId, String revisionType, String summary,
+            List<ChangeDetailDto> changes) {
+        this.userId = userId;
         this.entityType = entityType;
         this.entityId = entityId;
-        this.details = details;
+        this.revisionType = revisionType;
+        this.summary = summary;
+        this.changes = changes;
     }
 
     // Getters and Setters
@@ -59,20 +70,12 @@ public class ActionLog {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public ActionType getActionType() {
-        return actionType;
-    }
-
-    public void setActionType(ActionType actionType) {
-        this.actionType = actionType;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getEntityType() {
@@ -91,12 +94,28 @@ public class ActionLog {
         this.entityId = entityId;
     }
 
-    public String getDetails() {
-        return details;
+    public String getRevisionType() {
+        return revisionType;
     }
 
-    public void setDetails(String details) {
-        this.details = details;
+    public void setRevisionType(String revisionType) {
+        this.revisionType = revisionType;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public List<ChangeDetailDto> getChanges() {
+        return changes;
+    }
+
+    public void setChanges(List<ChangeDetailDto> changes) {
+        this.changes = changes;
     }
 
     public LocalDateTime getTimestamp() {
@@ -105,11 +124,5 @@ public class ActionLog {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public enum ActionType {
-        CREATE,
-        UPDATE,
-        DELETE
     }
 }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tritonptms.public_transport_management_system.dto.LogDetail;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
-import com.tritonptms.public_transport_management_system.model.ActionLog.ActionType;
 import com.tritonptms.public_transport_management_system.model.Bus;
 import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
 import com.tritonptms.public_transport_management_system.repository.BusRepository;
@@ -48,13 +47,6 @@ public class BusServiceImpl implements BusService {
         // This method will now only handle the creation logic
         Bus savedBus = busRepository.save(bus);
 
-        try {
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(new Bus(), savedBus);
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.CREATE, "Bus", savedBus.getId(), details);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error logging bus creation: " + e.getMessage());
-        }
         return savedBus;
     }
 
@@ -79,7 +71,6 @@ public class BusServiceImpl implements BusService {
         oldBus.setIsA_C(existingBus.getIsA_C());
         oldBus.setServiceType(existingBus.getServiceType());
 
-        System.out.println("oldBus object before update: " + oldBus);
         // Update the existing entity with new data
         existingBus.setRegistrationNumber(busDetails.getRegistrationNumber());
         existingBus.setMake(busDetails.getMake());
@@ -94,38 +85,16 @@ public class BusServiceImpl implements BusService {
         existingBus.setIsA_C(busDetails.getIsA_C());
         existingBus.setServiceType(busDetails.getServiceType());
 
-        System.out.println("existingBus object after update from DTO: " + existingBus);
-
         Bus updatedBus = busRepository.save(existingBus);
-
-        System.out.println("updatedBus object from repository save: " + updatedBus);
-
-        try {
-            // Compare the old object with the newly updated one
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(oldBus, updatedBus);
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.UPDATE, "Bus", updatedBus.getId(), details);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error logging bus update: " + e.getMessage());
-        }
 
         return updatedBus;
     }
 
     @Override
     public void deleteBus(Long id) {
-        Bus busToDelete = busRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Bus not found with id: " + id));
 
         busRepository.deleteById(id);
 
-        try {
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(busToDelete, new Bus());
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.DELETE, "Bus", id, details);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error logging bus deletion: " + e.getMessage());
-        }
     }
 
     // Search method

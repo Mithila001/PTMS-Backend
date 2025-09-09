@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tritonptms.public_transport_management_system.dto.LogDetail;
 import com.tritonptms.public_transport_management_system.dto.RouteDto;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
-import com.tritonptms.public_transport_management_system.model.ActionLog.ActionType;
 import com.tritonptms.public_transport_management_system.model.Route;
 import com.tritonptms.public_transport_management_system.repository.RouteRepository;
 import com.tritonptms.public_transport_management_system.service.specification.RouteSpecification;
@@ -98,16 +97,6 @@ public class RouteServiceImpl implements RouteService {
         Route route = convertToEntity(routeDto);
         Route savedRoute = routeRepository.save(route);
 
-        // Log the creation action with details
-        try {
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(new Route(), savedRoute);
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.CREATE, "Route", savedRoute.getId(), details);
-        } catch (JsonProcessingException e) {
-            // Log the error but don't stop the main process
-            System.err.println("Error logging route creation: " + e.getMessage());
-
-        }
         return savedRoute;
     }
 
@@ -139,15 +128,6 @@ public class RouteServiceImpl implements RouteService {
 
         Route savedRoute = routeRepository.save(existingRoute);
 
-        // Log the update action with detailed changes
-        try {
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(oldRoute, savedRoute);
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.UPDATE, "Route", savedRoute.getId(), details);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error logging route update: " + e.getMessage());
-        }
-
         return savedRoute;
     }
 
@@ -158,14 +138,6 @@ public class RouteServiceImpl implements RouteService {
 
         routeRepository.delete(route);
 
-        // Log the deletion action with details
-        try {
-            List<LogDetail> changes = ObjectComparisonUtil.compareObjects(route, new Route());
-            String details = objectMapper.writeValueAsString(changes);
-            actionLogService.logAction(ActionType.DELETE, "Route", route.getId(), details);
-        } catch (JsonProcessingException e) {
-            System.err.println("Error logging route deletion: " + e.getMessage());
-        }
     }
 
     @Override
