@@ -2,6 +2,8 @@ package com.tritonptms.public_transport_management_system.model;
 
 import java.util.Date;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,6 +19,7 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 @MappedSuperclass
+@Audited
 public abstract class Employee {
 
     @Id

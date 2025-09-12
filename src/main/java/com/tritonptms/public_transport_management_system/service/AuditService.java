@@ -1,15 +1,19 @@
 package com.tritonptms.public_transport_management_system.service;
 
+import com.tritonptms.public_transport_management_system.auditing.CustomRevisionEntity;
 import com.tritonptms.public_transport_management_system.dto.AuditLogDto;
 import com.tritonptms.public_transport_management_system.dto.ChangeDetailDto;
+import com.tritonptms.public_transport_management_system.model.Bus;
+import com.tritonptms.public_transport_management_system.model.Driver;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
+import jakarta.persistence.Query;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
-import org.hibernate.envers.DefaultRevisionEntity;
 import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.query.AuditEntity;
+import org.hibernate.envers.query.criteria.AuditCriterion;
 
 import org.apache.commons.lang3.builder.DiffResult;
 import org.apache.commons.lang3.builder.DiffBuilder;
@@ -24,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Arrays;
 
@@ -31,7 +36,14 @@ import java.util.Arrays;
 public class AuditService {
 
     private final EntityManager entityManager;
-    private final ActionLogService actionLogService; // To log actions to central table
+    private final ActionLogService actionLogService;
+
+    // List of audited entity classes - add your audited entities here
+    private final List<Class<?>> auditedEntityClasses = Arrays.asList(
+            Bus.class,
+            Driver.class
+    // Add other audited entity classes here as needed
+    );
 
     @Autowired
     public AuditService(EntityManager entityManager, ActionLogService actionLogService) {
@@ -41,12 +53,11 @@ public class AuditService {
 
     /**
      * Generic method to get audit logs for any entity
-     * 
+     *
      * @param entityClass      The class of the entity (e.g., Bus.class,
      *                         Driver.class)
      * @param entityId         The ID of the entity
-     * @param displayNameField The field name to use for display in summaries (e.g.,
-     *                         "registrationNumber" for Bus)
+     * @param displayNameField The field name to use for display in summaries
      * @param auditableFields  List of field names to track for changes (null means
      *                         track all fields)
      * @return List of audit logs
@@ -68,7 +79,7 @@ public class AuditService {
 
         for (Object[] revision : revisions) {
             T currentEntity = (T) revision[0];
-            DefaultRevisionEntity revEntity = (DefaultRevisionEntity) revision[1];
+            CustomRevisionEntity revEntity = (CustomRevisionEntity) revision[1];
             RevisionType revType = (RevisionType) revision[2];
 
             String entityName = entityClass.getSimpleName();
@@ -94,24 +105,130 @@ public class AuditService {
                     break;
             }
 
-            AuditLogDto log = new AuditLogDto(
-                    Long.valueOf(revEntity.getId()),
-                    new Date(revEntity.getTimestamp()),
-                    entityName,
-                    getEntityId(currentEntity),
-                    revType.name(),
-                    summary);
+            AuditLogDto log = new AuditLogDto();
+            log.setRevisionId(Long.valueOf(revEntity.getId()));
+            log.setTimestamp(new Date(revEntity.getTimestamp()));
+            log.setEntityType(entityName);
+            log.setEntityId(getEntityId(currentEntity));
+            log.setRevisionType(revType.name());
+            log.setSummary(summary);
             log.setChanges(changes);
+            log.setUsername(revEntity.getUsername());
             auditLogs.add(log);
-
-            // Log this action to the central ActionLog table
-            actionLogService.saveAuditLogAction(log);
 
             previousEntity = currentEntity;
         }
 
         java.util.Collections.reverse(auditLogs);
         return auditLogs;
+    }
+
+    /**
+     * Gets a list of recent audit logs across all audited entities.
+     * Fixed version that properly queries revision entities.
+     *
+     * @param limit The maximum number of recent logs to retrieve.
+     * @return A list of recent audit logs.
+     */
+    @SuppressWarnings("unchecked")
+    public List<AuditLogDto> getRecentGlobalAuditLogs(int limit) {
+        AuditReader auditReader = AuditReaderFactory.get(entityManager);
+        List<AuditLogDto> globalLogs = new ArrayList<>();
+
+        try {
+            // Method 1: Use native query to get recent revisions
+            Query query = entityManager.createNativeQuery(
+                    "SELECT id FROM custom_revision_entity ORDER BY id DESC LIMIT ?1");
+            query.setParameter(1, limit * auditedEntityClasses.size());
+
+            List<Number> recentRevisionIds = query.getResultList();
+
+            for (Number revisionId : recentRevisionIds) {
+                // For each revision, check all audited entity types
+                for (Class<?> entityClass : auditedEntityClasses) {
+                    try {
+                        List<Object[]> entityRevisions = auditReader.createQuery()
+                                .forRevisionsOfEntity(entityClass, false, true)
+                                .add(AuditEntity.revisionNumber().eq(revisionId))
+                                .getResultList();
+
+                        for (Object[] revisionData : entityRevisions) {
+                            Object entity = revisionData[0];
+                            CustomRevisionEntity revEntity = (CustomRevisionEntity) revisionData[1];
+                            RevisionType revType = (RevisionType) revisionData[2];
+
+                            AuditLogDto log = createAuditLogDtoFromRevision(entity, entityClass, revEntity, revType,
+                                    auditReader);
+                            globalLogs.add(log);
+                        }
+                    } catch (Exception e) {
+                        // Skip entities that might have issues
+                        System.err.println("Error processing entity " + entityClass.getSimpleName() + " for revision "
+                                + revisionId + ": " + e.getMessage());
+                    }
+                }
+
+                // Stop if we have enough logs
+                if (globalLogs.size() >= limit) {
+                    break;
+                }
+            }
+
+            // Sort by revision ID descending and limit results
+            globalLogs.sort((a, b) -> b.getRevisionId().compareTo(a.getRevisionId()));
+            if (globalLogs.size() > limit) {
+                globalLogs = globalLogs.subList(0, limit);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in getRecentGlobalAuditLogs: " + e.getMessage());
+            e.printStackTrace();
+
+            // Fallback method: Query each entity type individually
+            return getRecentGlobalAuditLogsFallback(limit);
+        }
+
+        return globalLogs;
+    }
+
+    /**
+     * Fallback method for getting recent audit logs.
+     * This method queries each audited entity type individually.
+     */
+    @SuppressWarnings("unchecked")
+    private List<AuditLogDto> getRecentGlobalAuditLogsFallback(int limit) {
+        AuditReader auditReader = AuditReaderFactory.get(entityManager);
+        List<AuditLogDto> globalLogs = new ArrayList<>();
+
+        for (Class<?> entityClass : auditedEntityClasses) {
+            try {
+                List<Object[]> revisions = auditReader.createQuery()
+                        .forRevisionsOfEntity(entityClass, false, true)
+                        .addOrder(AuditEntity.revisionNumber().desc())
+                        .setMaxResults(limit / auditedEntityClasses.size() + 1)
+                        .getResultList();
+
+                for (Object[] revisionData : revisions) {
+                    Object entity = revisionData[0];
+                    CustomRevisionEntity revEntity = (CustomRevisionEntity) revisionData[1];
+                    RevisionType revType = (RevisionType) revisionData[2];
+
+                    AuditLogDto log = createAuditLogDtoFromRevision(entity, entityClass, revEntity, revType,
+                            auditReader);
+                    globalLogs.add(log);
+                }
+            } catch (Exception e) {
+                System.err.println("Error processing entity " + entityClass.getSimpleName() + ": " + e.getMessage());
+            }
+        }
+
+        // Sort by revision ID descending and limit results
+        globalLogs.sort((a, b) -> b.getRevisionId().compareTo(a.getRevisionId()));
+        if (globalLogs.size() > limit) {
+            globalLogs = globalLogs.subList(0, limit);
+        }
+
+        return globalLogs;
     }
 
     /**
@@ -136,18 +253,141 @@ public class AuditService {
                 Arrays.asList("name", "licenseNumber", "phoneNumber", "email", "status"));
     }
 
-    /// ----------------------------------------------------------------------------------
-    /// Helper Methods
-    /// ----------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------
+    // Helper Methods
+    // ----------------------------------------------------------------------------------
+
+    /**
+     * Helper method to create an AuditLogDto from a given revision.
+     */
+    private <T> AuditLogDto createAuditLogDtoFromRevision(Object entity, Class<T> entityClass,
+            CustomRevisionEntity revEntity, RevisionType revType, AuditReader auditReader) {
+
+        Number revisionId = revEntity.getId();
+
+        // Get the previous version of the entity for comparison
+        Object previousEntity = null;
+        if (revType == RevisionType.MOD) {
+            try {
+                // Get all revisions for this specific entity to find the actual previous
+                // version
+                List<Number> revisions = auditReader.getRevisions(entityClass, getEntityId(entity));
+
+                // Find the previous revision for this entity
+                Number previousRevisionId = null;
+                for (int i = 0; i < revisions.size(); i++) {
+                    if (revisions.get(i).equals(revisionId) && i > 0) {
+                        previousRevisionId = revisions.get(i - 1);
+                        break;
+                    }
+                }
+
+                if (previousRevisionId != null) {
+                    previousEntity = auditReader.find(entityClass, getEntityId(entity), previousRevisionId);
+                }
+            } catch (Exception e) {
+                // Previous entity might not exist, that's okay
+                System.err.println("Could not find previous entity for comparison: " + e.getMessage());
+            }
+        }
+
+        String summary;
+        List<ChangeDetailDto> changes = new ArrayList<>();
+        String entityName = entityClass.getSimpleName();
+        String displayNameField = getDisplayNameField(entityClass);
+        String displayName = getDisplayName(entity, displayNameField);
+
+        switch (revType) {
+            case ADD:
+                summary = entityName + " '" + displayName + "' was created.";
+                break;
+            case MOD:
+                summary = entityName + " '" + displayName + "' was updated.";
+                if (previousEntity != null) {
+                    changes = getChanges(previousEntity, entity, getAllFieldNames(entityClass));
+                }
+                break;
+            case DEL:
+                // For deletions, try to get the entity state from the previous revision
+                try {
+                    List<Number> revisions = auditReader.getRevisions(entityClass, getEntityId(entity));
+                    Number previousRevisionId = null;
+                    for (int i = 0; i < revisions.size(); i++) {
+                        if (revisions.get(i).equals(revisionId) && i > 0) {
+                            previousRevisionId = revisions.get(i - 1);
+                            break;
+                        }
+                    }
+
+                    if (previousRevisionId != null) {
+                        Object deletedEntityState = auditReader.find(entityClass, getEntityId(entity),
+                                previousRevisionId);
+                        if (deletedEntityState != null) {
+                            String deletedDisplayName = getDisplayName(deletedEntityState,
+                                    getDisplayNameField(entityClass));
+                            summary = entityName + " '" + deletedDisplayName + "' was deleted.";
+                        } else {
+                            summary = entityName + " '" + displayName + "' was deleted.";
+                        }
+                    } else {
+                        summary = entityName + " '" + displayName + "' was deleted.";
+                    }
+                } catch (Exception e) {
+                    summary = entityName + " '" + displayName + "' was deleted.";
+                }
+                break;
+            default:
+                summary = "Unknown action.";
+                break;
+        }
+
+        AuditLogDto log = new AuditLogDto();
+        log.setRevisionId(Long.valueOf(revisionId.longValue()));
+        log.setTimestamp(new Date(revEntity.getTimestamp()));
+        log.setEntityType(entityName);
+        log.setEntityId(getEntityId(entity));
+        log.setRevisionType(revType.name());
+        log.setSummary(summary);
+        log.setChanges(changes);
+        log.setUsername(revEntity.getUsername());
+        return log;
+    }
+
+    /**
+     * Determines the display name field for a given entity class.
+     */
+    private String getDisplayNameField(Class<?> entityClass) {
+        if (entityClass.equals(Bus.class)) {
+            return "registrationNumber";
+        }
+        if (entityClass.equals(Driver.class)) {
+            return "name";
+        }
+        // Add other entity mappings here
+        // For example:
+        // if (entityClass.equals(Route.class)) {
+        // return "name";
+        // }
+        // if (entityClass.equals(Conductor.class)) {
+        // return "name";
+        // }
+
+        // Fallback
+        return "id";
+    }
 
     /**
      * Get changes between two entity instances using reflection
      */
-    private <T> List<ChangeDetailDto> getChanges(T previousEntity, T currentEntity, List<String> auditableFields) {
+    private <T> List<ChangeDetailDto> getChanges(Object previousEntity, Object currentEntity,
+            List<String> auditableFields) {
         List<ChangeDetailDto> changes = new ArrayList<>();
 
         try {
-            DiffBuilder<T> diffBuilder = new DiffBuilder<>(previousEntity, currentEntity,
+            System.out.println("Comparing entities: " + previousEntity.getClass().getSimpleName());
+            System.out.println("Fields to compare: " + auditableFields);
+
+            DiffBuilder diffBuilder = new DiffBuilder(previousEntity, currentEntity,
                     ToStringStyle.SHORT_PREFIX_STYLE);
 
             // Get all fields to compare
@@ -158,14 +398,20 @@ public class AuditService {
                 try {
                     Object previousValue = getFieldValue(previousEntity, fieldName);
                     Object currentValue = getFieldValue(currentEntity, fieldName);
+
+                    System.out.println(
+                            "Field: " + fieldName + ", Previous: " + previousValue + ", Current: " + currentValue);
+
                     diffBuilder.append(fieldName, previousValue, currentValue);
                 } catch (Exception e) {
+                    System.err.println("Error accessing field " + fieldName + ": " + e.getMessage());
                     // Skip fields that can't be accessed
                     continue;
                 }
             }
 
-            DiffResult<T> diff = diffBuilder.build();
+            DiffResult diff = diffBuilder.build();
+            System.out.println("Diff result has " + diff.getNumberOfDiffs() + " differences");
 
             for (Object d : diff.getDiffs()) {
                 Diff<Object> fieldDiff = (Diff<Object>) d;
@@ -173,19 +419,23 @@ public class AuditService {
                         fieldDiff.getFieldName(),
                         String.valueOf(fieldDiff.getLeft()),
                         String.valueOf(fieldDiff.getRight())));
+                System.out.println("Added change: " + fieldDiff.getFieldName() +
+                        " from " + fieldDiff.getLeft() + " to " + fieldDiff.getRight());
             }
         } catch (Exception e) {
             // Log error but don't fail the entire operation
             System.err.println("Error getting changes for entity: " + e.getMessage());
+            e.printStackTrace();
         }
 
+        System.out.println("Final changes count: " + changes.size());
         return changes;
     }
 
     /**
      * Get the display name for an entity (e.g., registration number for bus)
      */
-    private <T> String getDisplayName(T entity, String displayNameField) {
+    private String getDisplayName(Object entity, String displayNameField) {
         try {
             Object value = getFieldValue(entity, displayNameField);
             return value != null ? value.toString() : "Unknown";
@@ -197,7 +447,7 @@ public class AuditService {
     /**
      * Get the ID of an entity using reflection to find @Id annotated field
      */
-    private <T> Long getEntityId(T entity) {
+    private Long getEntityId(Object entity) {
         if (entity == null) {
             return null;
         }
@@ -273,8 +523,6 @@ public class AuditService {
                 fieldNames.add(field.getName());
             }
         }
-
         return fieldNames;
     }
-
 }

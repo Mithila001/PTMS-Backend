@@ -6,6 +6,7 @@ import java.util.List;
 public class AuditLogDto {
 
     private Long revisionId;
+    private String username;
     private Date timestamp;
     private String entityType;
     private Long entityId;
@@ -16,10 +17,12 @@ public class AuditLogDto {
     public AuditLogDto() {
     }
 
-    public AuditLogDto(Long revisionId, Date timestamp, String entityType, Long entityId, String revisionType,
+    public AuditLogDto(Long revisionId, Date timestamp, String username, String entityType, Long entityId,
+            String revisionType,
             String summary) {
         this.revisionId = revisionId;
         this.timestamp = timestamp;
+        this.username = username;
         this.entityType = entityType;
         this.entityId = entityId;
         this.revisionType = revisionType;
@@ -41,6 +44,14 @@ public class AuditLogDto {
 
     public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEntityType() {

@@ -2,6 +2,8 @@ package com.tritonptms.public_transport_management_system.model;
 
 import java.util.Date;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -12,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
+@Audited
 @Table(name = "drivers")
 public class Driver extends Employee {
 

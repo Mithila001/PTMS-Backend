@@ -5,14 +5,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "roles") // Define the table name for roles
+@Table(name = "roles")
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 40, unique = true, nullable = false)
+    @Column(length = 50, unique = true, nullable = false)
     private String name;
 
     // Many-to-many relationship with User
@@ -54,8 +54,8 @@ public class Role {
     @Override
     public String toString() {
         return "Role{" +
-               "id=" + id +
-               ", name='" + name + '\'' +
-               '}';
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

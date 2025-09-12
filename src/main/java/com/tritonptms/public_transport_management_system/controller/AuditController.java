@@ -27,4 +27,11 @@ public class AuditController {
         List<AuditLogDto> logs = auditService.getAuditLogsForBus(busId);
         return ResponseEntity.ok(logs);
     }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<AuditLogDto>> getRecentGlobalAuditLogs() {
+        // You can adjust the limit as needed, e.g., to 10 or 20
+        List<AuditLogDto> logs = auditService.getRecentGlobalAuditLogs(10);
+        return ResponseEntity.ok(logs);
+    }
 }
