@@ -8,6 +8,9 @@ import com.tritonptms.public_transport_management_system.repository.UserReposito
 import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
 import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.HashSet;
@@ -29,6 +32,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public RegisterResponseDto registerNewUser(RegisterRequestDto registerRequest) {
+
+        // --- Security Check: Only ADMIN can register users ---
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(ERole.ROLE_ADMIN.name()));
+
+        if (!isAdmin) {
+            throw new AccessDeniedException("Only ADMIN users are allowed to register new employees.");
+        }
+        // --- End of Security Check ---
+
         // Generate username and temporary password
         String generatedUsername = "bms" + registerRequest.getFirstName().toLowerCase()
                 + registerRequest.getLastName().toLowerCase();
@@ -53,11 +67,13 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(generatedPassword));
 
         Set<Role> roles = new HashSet<>();
-        Role defaultRole = roleRepository.findByName(ERole.ROLE_USER.name())
-                .orElseThrow(() -> new RuntimeException(
-                        "Error: Default role ROLE_USER not found. Ensure it's populated."));
-        roles.add(defaultRole);
+        String requestedRoleName = registerRequest.getRole().toUpperCase();
 
+        // Find the requested role from the database
+        Role assignedRole = roleRepository.findByName(requestedRoleName)
+                .orElseThrow(() -> new RuntimeException("Error: Role '" + requestedRoleName + "' not found."));
+
+        roles.add(assignedRole);
         user.setRoles(roles);
         userRepository.save(user);
 
