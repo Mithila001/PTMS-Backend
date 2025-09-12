@@ -60,9 +60,12 @@ public class DataLoader {
 
         Role adminRole = findOrCreateRole(ERole.ROLE_ADMIN.name());
         Role operationsManagerRole = findOrCreateRole(ERole.ROLE_OPERATIONS_MANAGER.name());
+        Role userRole = findOrCreateRole(ERole.ROLE_USER.name());
 
         if (!userRepository.existsByUsername("admin")) {
-            User adminUser = new User("admin", passwordEncoder.encode("adminpass"));
+            User adminUser = new User("admin@example.com", "Admin", "User", "000000000V");
+            adminUser.setUsername("admin");
+            adminUser.setPassword(passwordEncoder.encode("adminpass"));
             Set<Role> adminRoles = new HashSet<>();
             adminRoles.add(adminRole);
             adminUser.setRoles(adminRoles);
@@ -73,7 +76,9 @@ public class DataLoader {
         }
 
         if (!userRepository.existsByUsername("opsmanager")) {
-            User opsManagerUser = new User("opsmanager", passwordEncoder.encode("opspass"));
+            User opsManagerUser = new User("opsmanager@example.com", "Operations", "Manager", "000000001V");
+            opsManagerUser.setUsername("opsmanager");
+            opsManagerUser.setPassword(passwordEncoder.encode("opspass"));
             Set<Role> opsManagerRoles = new HashSet<>();
             opsManagerRoles.add(operationsManagerRole);
             opsManagerUser.setRoles(opsManagerRoles);
@@ -81,6 +86,20 @@ public class DataLoader {
             logger.info("Created default OPERATIONS_MANAGER user: opsmanager");
         } else {
             logger.info("Default OPERATIONS_MANAGER user already exists.");
+        }
+
+        // Add a default ROLE_USER for testing
+        if (!userRepository.existsByUsername("testuser")) {
+            User testUser = new User("testuser@example.com", "Test", "User", "000000002V");
+            testUser.setUsername("testuser");
+            testUser.setPassword(passwordEncoder.encode("testpass"));
+            Set<Role> testRoles = new HashSet<>();
+            testRoles.add(userRole);
+            testUser.setRoles(testRoles);
+            userRepository.save(testUser);
+            logger.info("Created default USER user: testuser");
+        } else {
+            logger.info("Default USER user already exists.");
         }
 
         logger.info("Default roles and users initialization complete.");

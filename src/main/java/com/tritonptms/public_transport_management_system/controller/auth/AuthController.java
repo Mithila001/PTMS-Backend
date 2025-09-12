@@ -7,7 +7,10 @@ import com.tritonptms.public_transport_management_system.model.User;
 import com.tritonptms.public_transport_management_system.model.enums.users.ERole;
 import com.tritonptms.public_transport_management_system.repository.RoleRepository;
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
+import com.tritonptms.public_transport_management_system.service.UserService;
 import com.tritonptms.public_transport_management_system.dto.auth.LoginRequest;
+import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
+import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
 import com.tritonptms.public_transport_management_system.dto.auth.UserInfoResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,15 +37,17 @@ public class AuthController {
         private final UserRepository userRepository;
         private final RoleRepository roleRepository;
         private final PasswordEncoder encoder;
+        private final UserService userService;
 
         public AuthController(AuthenticationManager authenticationManager,
                         UserRepository userRepository,
                         RoleRepository roleRepository,
-                        PasswordEncoder encoder) {
+                        PasswordEncoder encoder, UserService userService) {
                 this.authenticationManager = authenticationManager;
                 this.userRepository = userRepository;
                 this.roleRepository = roleRepository;
                 this.encoder = encoder;
+                this.userService = userService;
         }
 
         // @PostMapping("/login")
@@ -96,29 +101,18 @@ public class AuthController {
 
         /**
          * Registers a new user with a default role.
-         * 
-         * @param signUpRequest DTO containing username, password, and (implicitly) role
-         *                      assignment logic.
-         * @return ResponseEntity indicating success or failure of registration.
+         *
+         * @param registerRequest DTO containing user registration details.
+         * @return ResponseEntity with the generated username and password upon success.
          */
         @PostMapping("/register")
-        public ResponseEntity<?> registerUser(@RequestBody LoginRequest signUpRequest) {
-                // ... (existing code for /register) ...
-                if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-                        return ResponseEntity.badRequest().body("Error: Username is already taken!");
+        public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDto registerRequest) {
+                try {
+                        // The service now returns the DTO we need to send back
+                        RegisterResponseDto response = userService.registerNewUser(registerRequest);
+                        return ResponseEntity.ok(response);
+                } catch (RuntimeException ex) {
+                        return ResponseEntity.badRequest().body("Error: " + ex.getMessage());
                 }
-
-                User user = new User(signUpRequest.getUsername(), encoder.encode(signUpRequest.getPassword()));
-
-                Set<Role> roles = new HashSet<>();
-                Role defaultRole = roleRepository.findByName(ERole.ROLE_ADMIN.name())
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Error: Default role ROLE_ADMIN not found. Ensure it's populated."));
-                roles.add(defaultRole);
-
-                user.setRoles(roles);
-                userRepository.save(user);
-
-                return ResponseEntity.ok("User registered successfully as OPERATIONS_MANAGER!");
         }
 }
