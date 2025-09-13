@@ -99,20 +99,4 @@ public class AuthController {
                 return ResponseEntity.ok(new UserInfoResponse(currentUser.getId(), currentUser.getUsername(), roles));
         }
 
-        /**
-         * Registers a new user with a default role.
-         *
-         * @param registerRequest DTO containing user registration details.
-         * @return ResponseEntity with the generated username and password upon success.
-         */
-        @PostMapping("/register")
-        public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDto registerRequest) {
-                try {
-                        // The service now returns the DTO we need to send back
-                        RegisterResponseDto response = userService.registerNewUser(registerRequest);
-                        return ResponseEntity.ok(response);
-                } catch (RuntimeException ex) {
-                        return ResponseEntity.badRequest().body("Error: " + ex.getMessage());
-                }
-        }
 }

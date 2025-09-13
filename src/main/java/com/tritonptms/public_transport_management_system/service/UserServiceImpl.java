@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -82,5 +83,10 @@ public class UserServiceImpl implements UserService {
                 generatedUsername,
                 generatedPassword,
                 "User registered successfully! Please use the provided credentials to log in.");
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }
