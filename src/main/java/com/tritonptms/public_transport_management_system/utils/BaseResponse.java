@@ -17,6 +17,10 @@ public class BaseResponse<T> {
         this.errors = errors;
     }
 
+    public static <T> BaseResponse<T> success(T data, String message) {
+        return new BaseResponse<>(200, message, data, null);
+    }
+
     // Getters and setters
     public LocalDateTime getTimestamp() {
         return timestamp;

@@ -1,8 +1,12 @@
 package com.tritonptms.public_transport_management_system.controller;
 
+import com.tritonptms.public_transport_management_system.dto.BusDto;
 import com.tritonptms.public_transport_management_system.model.Bus;
 import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
 import com.tritonptms.public_transport_management_system.service.BusService;
+import com.tritonptms.public_transport_management_system.utils.BaseResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import jakarta.validation.Valid;
 
@@ -61,12 +65,13 @@ public class BusController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Bus>> searchBuses(
+    public ResponseEntity<BaseResponse<Page<BusDto>>> searchBuses(
             @RequestParam(required = false) String registrationNumber,
-            @RequestParam(required = false) ServiceType serviceType) {
+            @RequestParam(required = false) ServiceType serviceType,
+            Pageable pageable) {
 
-        List<Bus> buses = busService.searchBuses(registrationNumber, serviceType);
-        return new ResponseEntity<>(buses, HttpStatus.OK);
+        Page<BusDto> busPage = busService.searchBuses(registrationNumber, serviceType, pageable);
+        return new ResponseEntity<>(BaseResponse.success(busPage, "Buses retrieved successfully."), HttpStatus.OK);
     }
 
 }

@@ -2,6 +2,7 @@ package com.tritonptms.public_transport_management_system.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tritonptms.public_transport_management_system.dto.BusDto;
 import com.tritonptms.public_transport_management_system.dto.LogDetail;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import com.tritonptms.public_transport_management_system.model.Bus;
@@ -9,6 +10,8 @@ import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
 import com.tritonptms.public_transport_management_system.repository.BusRepository;
 import com.tritonptms.public_transport_management_system.service.specification.BusSpecification;
 import com.tritonptms.public_transport_management_system.utils.ObjectComparisonUtil;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
@@ -97,11 +100,32 @@ public class BusServiceImpl implements BusService {
 
     }
 
+    private BusDto convertToDto(Bus bus) {
+        BusDto busDto = new BusDto();
+        busDto.setId(bus.getId());
+        busDto.setRegistrationNumber(bus.getRegistrationNumber());
+        busDto.setMake(bus.getMake());
+        busDto.setModel(bus.getModel());
+        busDto.setYearOfManufacture(bus.getYearOfManufacture());
+        busDto.setFuelType(bus.getFuelType());
+        busDto.setActive(bus.isActive());
+        busDto.setSeatingCapacity(bus.getSeatingCapacity());
+        busDto.setStandingCapacity(bus.getStandingCapacity());
+        busDto.setNtcPermitNumber(bus.getNtcPermitNumber());
+        busDto.setComfortType(bus.getComfortType());
+        busDto.setIsA_C(bus.getIsA_C());
+        busDto.setServiceType(bus.getServiceType());
+        return busDto;
+    }
+
     // Search method
     @Override
-    public List<Bus> searchBuses(String registrationNumber, ServiceType serviceType) {
-        return busRepository.findAll(Specification.allOf(
+    public Page<BusDto> searchBuses(String registrationNumber, ServiceType serviceType, Pageable pageable) {
+        Specification<Bus> combinedSpec = Specification.allOf(
                 BusSpecification.hasRegistrationNumber(registrationNumber),
-                BusSpecification.hasServiceType(serviceType)));
+                BusSpecification.hasServiceType(serviceType));
+
+        Page<Bus> busPage = busRepository.findAll(combinedSpec, pageable);
+        return busPage.map(this::convertToDto);
     }
 }

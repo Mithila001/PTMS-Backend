@@ -1,7 +1,10 @@
 package com.tritonptms.public_transport_management_system.service;
 
+import com.tritonptms.public_transport_management_system.dto.BusDto;
 import com.tritonptms.public_transport_management_system.model.Bus;
 import com.tritonptms.public_transport_management_system.model.Bus.ServiceType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,5 +20,5 @@ public interface BusService {
 
     void deleteBus(Long id);
 
-    List<Bus> searchBuses(String registrationNumber, ServiceType serviceType);
+    Page<BusDto> searchBuses(String registrationNumber, ServiceType serviceType, Pageable pageable);
 }
