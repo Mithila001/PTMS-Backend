@@ -6,9 +6,16 @@ import com.tritonptms.public_transport_management_system.dto.AssignmentDto;
 import com.tritonptms.public_transport_management_system.model.*;
 import com.tritonptms.public_transport_management_system.model.enums.assignment.AssignmentStatus;
 import com.tritonptms.public_transport_management_system.repository.*;
+import com.tritonptms.public_transport_management_system.service.specification.AssignmentSpecification;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -158,10 +165,20 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    public List<AssignmentDto> getAssignmentsByStatus(AssignmentStatus status) {
-        return assignmentRepository.findByStatus(status)
-                .stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public Page<AssignmentDto> searchAssignments(Long scheduledTripId, Long busId, Long driverId, Long conductorId,
+            LocalDate date, AssignmentStatus status, String driverName, String conductorName, Pageable pageable) {
+        Specification<Assignment> combinedSpec = Specification.allOf(
+                AssignmentSpecification.hasScheduledTripId(scheduledTripId),
+                AssignmentSpecification.hasBusId(busId),
+                AssignmentSpecification.hasDriverId(driverId),
+                AssignmentSpecification.hasConductorId(conductorId),
+                AssignmentSpecification.hasDate(date),
+                AssignmentSpecification.hasStatus(status),
+                AssignmentSpecification.driverNameContains(driverName),
+                AssignmentSpecification.conductorNameContains(conductorName));
+
+        Page<Assignment> assignmentPage = assignmentRepository.findAll(combinedSpec, pageable);
+        return assignmentPage.map(this::convertToDto);
     }
+
 }

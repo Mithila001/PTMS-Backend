@@ -15,6 +15,8 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -141,10 +143,13 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
-    public List<Route> searchRoutes(String routeNumber, String origin, String destination) {
-        return routeRepository.findAll(Specification.allOf(
+    public Page<RouteDto> searchRoutes(String routeNumber, String origin, String destination, Pageable pageable) {
+        Specification<Route> combinedSpec = Specification.allOf(
                 RouteSpecification.hasRouteNumber(routeNumber),
                 RouteSpecification.hasOrigin(origin),
-                RouteSpecification.hasDestination(destination)));
+                RouteSpecification.hasDestination(destination));
+
+        Page<Route> routePage = routeRepository.findAll(combinedSpec, pageable);
+        return routePage.map(this::convertToDto);
     }
 }

@@ -3,8 +3,12 @@ package com.tritonptms.public_transport_management_system.controller;
 import com.tritonptms.public_transport_management_system.dto.RouteDto;
 import com.tritonptms.public_transport_management_system.model.Route;
 import com.tritonptms.public_transport_management_system.service.RouteService;
+import com.tritonptms.public_transport_management_system.utils.BaseResponse;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,12 +74,13 @@ public class RouteController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Route>> searchRoutes(
+    public ResponseEntity<BaseResponse<Page<RouteDto>>> searchRoutes(
             @RequestParam(required = false) String routeNumber,
             @RequestParam(required = false) String origin,
-            @RequestParam(required = false) String destination) {
+            @RequestParam(required = false) String destination,
+            Pageable pageable) {
 
-        List<Route> routes = routeService.searchRoutes(routeNumber, origin, destination);
-        return new ResponseEntity<>(routes, HttpStatus.OK);
+        Page<RouteDto> routePage = routeService.searchRoutes(routeNumber, origin, destination, pageable);
+        return new ResponseEntity<>(BaseResponse.success(routePage, "Routes retrieved successfully."), HttpStatus.OK);
     }
 }

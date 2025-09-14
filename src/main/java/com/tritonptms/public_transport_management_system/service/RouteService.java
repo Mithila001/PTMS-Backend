@@ -6,6 +6,9 @@ import com.tritonptms.public_transport_management_system.model.Route;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface RouteService {
 
     List<RouteDto> getAllRoutes();
@@ -22,6 +25,6 @@ public interface RouteService {
 
     RouteDto convertToDto(Route route);
 
-    List<Route> searchRoutes(String routeNumber, String origin, String destination);
+    Page<RouteDto> searchRoutes(String routeNumber, String origin, String destination, Pageable pageable);
 
 }
