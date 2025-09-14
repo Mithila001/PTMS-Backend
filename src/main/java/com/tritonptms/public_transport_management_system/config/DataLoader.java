@@ -114,9 +114,9 @@ public class DataLoader {
         });
 
         // Centralized configuration for data loaders
-        boolean shouldRecreateData = false;
+        boolean shouldRecreateData = true;
 
-        busDataLoader.createBusRecords(shouldRecreateData, 10);
+        busDataLoader.createBusRecords(shouldRecreateData, 50);
         routeDataLoader.createRouteRecords(shouldRecreateData, 20);
         scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
         driverDataLoader.createDriverRecords(shouldRecreateData, 20);

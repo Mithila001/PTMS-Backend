@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface DriverRepository extends JpaRepository<Driver, Long>, JpaSpecificationExecutor<Driver> {
     Optional<Driver> findByNicNumber(String nicNumber);
+
+    long countByAvailable(boolean available);
 }

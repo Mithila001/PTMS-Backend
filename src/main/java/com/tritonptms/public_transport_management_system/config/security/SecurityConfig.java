@@ -100,6 +100,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/audit/**").permitAll()
                         .requestMatchers("/api/action-logs/**").permitAll()
                         .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/operations/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         // .requestMatchers("/api/buses/**").hasAnyRole("ADMIN", "OPERATIONS_MANAGER")

@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface ConductorRepository extends JpaRepository<Conductor, Long>, JpaSpecificationExecutor<Conductor> {
     Optional<Conductor> findByNicNumber(String nicNumber);
+
+    long countByAvailable(boolean available);
 }

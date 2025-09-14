@@ -7,5 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BusRepository extends JpaRepository<Bus, Long>, JpaSpecificationExecutor<Bus> {
+    long countByIsActive(boolean isActive);
 
 }
