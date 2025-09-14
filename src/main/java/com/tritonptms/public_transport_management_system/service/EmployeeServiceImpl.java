@@ -1,16 +1,15 @@
 package com.tritonptms.public_transport_management_system.service;
 
+import com.tritonptms.public_transport_management_system.dto.EmployeeDto;
 import com.tritonptms.public_transport_management_system.model.Conductor;
 import com.tritonptms.public_transport_management_system.model.Driver;
-import com.tritonptms.public_transport_management_system.model.Employee;
 import com.tritonptms.public_transport_management_system.repository.ConductorRepository;
 import com.tritonptms.public_transport_management_system.repository.DriverRepository;
 import com.tritonptms.public_transport_management_system.service.specification.EmployeeSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -24,32 +23,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<Employee> searchEmployees(String nicNumber, String name, String contactNumber, String licenseNumber) {
-        List<Employee> employees = new ArrayList<>();
-
-        // Search for drivers
-        Specification<Driver> driverSpec = EmployeeSpecification.forDrivers(nicNumber, name, contactNumber,
-                licenseNumber);
-        employees.addAll(driverRepository.findAll(driverSpec));
-
-        // Search for conductors
-        Specification<Conductor> conductorSpec = EmployeeSpecification.forConductors(nicNumber, name, contactNumber,
-                licenseNumber);
-        employees.addAll(conductorRepository.findAll(conductorSpec));
-
-        return employees;
-    }
-
-    @Override
-    public List<Driver> searchDrivers(String nicNumber, String name, String contactNumber, String licenseNumber) {
+    public Page<EmployeeDto> searchDrivers(String nicNumber, String name, String contactNumber, String licenseNumber,
+            Pageable pageable) {
         Specification<Driver> spec = EmployeeSpecification.forDrivers(nicNumber, name, contactNumber, licenseNumber);
-        return driverRepository.findAll(spec);
+        Page<Driver> driversPage = driverRepository.findAll(spec, pageable);
+        return driversPage.map(EmployeeDto::fromEntity);
     }
 
     @Override
-    public List<Conductor> searchConductors(String nicNumber, String name, String contactNumber, String licenseNumber) {
+    public Page<EmployeeDto> searchConductors(String nicNumber, String name, String contactNumber, String licenseNumber,
+            Pageable pageable) {
         Specification<Conductor> spec = EmployeeSpecification.forConductors(nicNumber, name, contactNumber,
                 licenseNumber);
-        return conductorRepository.findAll(spec);
+        Page<Conductor> conductorsPage = conductorRepository.findAll(spec, pageable);
+        return conductorsPage.map(EmployeeDto::fromEntity);
     }
 }

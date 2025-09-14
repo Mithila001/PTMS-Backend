@@ -6,13 +6,14 @@ import com.tritonptms.public_transport_management_system.model.Employee;
 import jakarta.persistence.criteria.Path;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EmployeeSpecification {
 
-    // General purpose specifications for common fields
     public static <T extends Employee> Specification<T> hasNicNumber(String nicNumber) {
         if (!StringUtils.hasText(nicNumber)) {
-            return null;
+            return Specification.where(null);
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
                 criteriaBuilder.lower(root.get("nicNumber")),
@@ -21,7 +22,7 @@ public class EmployeeSpecification {
 
     public static <T extends Employee> Specification<T> hasName(String name) {
         if (!StringUtils.hasText(name)) {
-            return null;
+            return Specification.where(null);
         }
         return (root, query, criteriaBuilder) -> {
             String lowerCaseName = name.toLowerCase();
@@ -35,49 +36,38 @@ public class EmployeeSpecification {
 
     public static <T extends Employee> Specification<T> hasContactNumber(String contactNumber) {
         if (!StringUtils.hasText(contactNumber)) {
-            return null;
+            return Specification.where(null);
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
                 root.get("contactNumber"),
                 "%" + contactNumber + "%");
     }
 
-    // Driver-specific specification
-    public static Specification<Driver> hasDrivingLicense(String licenseNumber) {
-        if (!StringUtils.hasText(licenseNumber)) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> criteriaBuilder.like(
-                criteriaBuilder.lower(root.get("drivingLicenseNumber")),
-                "%" + licenseNumber.toLowerCase() + "%");
-    }
-
-    // Conductor-specific specification
-    public static Specification<Conductor> hasConductorLicense(String licenseNumber) {
-        if (!StringUtils.hasText(licenseNumber)) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> criteriaBuilder.like(
-                criteriaBuilder.lower(root.get("conductorLicenseNumber")),
-                "%" + licenseNumber.toLowerCase() + "%");
-    }
-
-    // Helper methods to combine specifications for specific employee types
     public static Specification<Driver> forDrivers(String nicNumber, String name, String contactNumber,
             String licenseNumber) {
-        return Specification.allOf(
-                hasNicNumber(nicNumber),
-                hasName(name),
-                hasContactNumber(contactNumber),
-                hasDrivingLicense(licenseNumber));
+        List<Specification<Driver>> specifications = new ArrayList<>();
+        specifications.add(hasNicNumber(nicNumber));
+        specifications.add(hasName(name));
+        specifications.add(hasContactNumber(contactNumber));
+        if (StringUtils.hasText(licenseNumber)) {
+            specifications.add((root, query, criteriaBuilder) -> criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("drivingLicenseNumber")),
+                    "%" + licenseNumber.toLowerCase() + "%"));
+        }
+        return Specification.allOf(specifications);
     }
 
     public static Specification<Conductor> forConductors(String nicNumber, String name, String contactNumber,
             String licenseNumber) {
-        return Specification.allOf(
-                hasNicNumber(nicNumber),
-                hasName(name),
-                hasContactNumber(contactNumber),
-                hasConductorLicense(licenseNumber));
+        List<Specification<Conductor>> specifications = new ArrayList<>();
+        specifications.add(hasNicNumber(nicNumber));
+        specifications.add(hasName(name));
+        specifications.add(hasContactNumber(contactNumber));
+        if (StringUtils.hasText(licenseNumber)) {
+            specifications.add((root, query, criteriaBuilder) -> criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("conductorLicenseNumber")),
+                    "%" + licenseNumber.toLowerCase() + "%"));
+        }
+        return Specification.allOf(specifications);
     }
 }

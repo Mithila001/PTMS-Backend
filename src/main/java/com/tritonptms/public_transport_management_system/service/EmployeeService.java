@@ -1,15 +1,13 @@
 package com.tritonptms.public_transport_management_system.service;
 
-import com.tritonptms.public_transport_management_system.model.Employee;
-import com.tritonptms.public_transport_management_system.model.Driver;
-import com.tritonptms.public_transport_management_system.model.Conductor;
-
-import java.util.List;
+import com.tritonptms.public_transport_management_system.dto.EmployeeDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface EmployeeService {
-    List<Employee> searchEmployees(String nicNumber, String name, String contactNumber, String licenseNumber);
+    Page<EmployeeDto> searchDrivers(String nicNumber, String name, String contactNumber, String licenseNumber,
+            Pageable pageable);
 
-    List<Driver> searchDrivers(String nicNumber, String name, String contactNumber, String licenseNumber);
-
-    List<Conductor> searchConductors(String nicNumber, String name, String contactNumber, String licenseNumber);
+    Page<EmployeeDto> searchConductors(String nicNumber, String name, String contactNumber, String licenseNumber,
+            Pageable pageable);
 }
