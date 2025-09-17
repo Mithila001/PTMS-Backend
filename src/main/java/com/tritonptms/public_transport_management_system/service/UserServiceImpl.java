@@ -7,6 +7,7 @@ import com.tritonptms.public_transport_management_system.repository.RoleReposito
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
 import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
 import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
+import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -68,13 +70,15 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(generatedPassword));
 
         Set<Role> roles = new HashSet<>();
-        String requestedRoleName = registerRequest.getRole().toUpperCase();
+        List<String> requestedRoleNames = registerRequest.getRoles();
 
-        // Find the requested role from the database
-        Role assignedRole = roleRepository.findByName(requestedRoleName)
-                .orElseThrow(() -> new RuntimeException("Error: Role '" + requestedRoleName + "' not found."));
-
-        roles.add(assignedRole);
+        // Explanation: We loop through each role name sent from the front end.
+        requestedRoleNames.forEach(role -> {
+            String upperCaseRole = role.toUpperCase();
+            Role assignedRole = roleRepository.findByName(upperCaseRole)
+                    .orElseThrow(() -> new RuntimeException("Error: Role '" + upperCaseRole + "' not found."));
+            roles.add(assignedRole);
+        });
         user.setRoles(roles);
         userRepository.save(user);
 
@@ -88,5 +92,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
+    }
+
+    @Override
+    public void deleteUserById(Long id) {
+        User userToDelete = getUserById(id); // Re-use the method to find the user
+
+        // Security Check: Prevent a user from deleting their own account
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        if (Objects.equals(userToDelete.getUsername(), currentUsername)) {
+            throw new IllegalArgumentException("You cannot delete your own user account.");
+        }
+
+        userRepository.delete(userToDelete);
     }
 }

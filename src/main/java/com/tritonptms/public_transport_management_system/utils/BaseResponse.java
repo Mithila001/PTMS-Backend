@@ -21,6 +21,10 @@ public class BaseResponse<T> {
         return new BaseResponse<>(200, message, data, null);
     }
 
+    public static <T> BaseResponse<T> error(T data, String message) {
+        return new BaseResponse<>(400, message, null, null);
+    }
+
     // Getters and setters
     public LocalDateTime getTimestamp() {
         return timestamp;

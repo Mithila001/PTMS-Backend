@@ -115,7 +115,7 @@ public class EmployeeDto {
         return isCurrentEmployee;
     }
 
-    public void setCurrentEmployee(boolean currentEmployee) {
-        isCurrentEmployee = currentEmployee;
+    public void setCurrentEmployee(boolean isCurrentEmployee) {
+        this.isCurrentEmployee = isCurrentEmployee;
     }
 }

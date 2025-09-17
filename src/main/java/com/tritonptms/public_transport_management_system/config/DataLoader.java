@@ -63,9 +63,9 @@ public class DataLoader {
         Role userRole = findOrCreateRole(ERole.ROLE_USER.name());
 
         if (!userRepository.existsByUsername("admin")) {
-            User adminUser = new User("admin@example.com", "Admin", "User", "000000000V");
+            User adminUser = new User("admin@example.com", "Admin", "User", "000100000V");
             adminUser.setUsername("admin");
-            adminUser.setPassword(passwordEncoder.encode("adminpass"));
+            adminUser.setPassword(passwordEncoder.encode("admin"));
             Set<Role> adminRoles = new HashSet<>();
             adminRoles.add(adminRole);
             adminUser.setRoles(adminRoles);
@@ -75,10 +75,10 @@ public class DataLoader {
             logger.info("Default ADMIN user already exists.");
         }
 
-        if (!userRepository.existsByUsername("opsmanager")) {
-            User opsManagerUser = new User("opsmanager@example.com", "Operations", "Manager", "000000001V");
-            opsManagerUser.setUsername("opsmanager");
-            opsManagerUser.setPassword(passwordEncoder.encode("opspass"));
+        if (!userRepository.existsByUsername("ops")) {
+            User opsManagerUser = new User("ops@example.com", "Operations", "Manager", "020000001V");
+            opsManagerUser.setUsername("ops");
+            opsManagerUser.setPassword(passwordEncoder.encode("ops"));
             Set<Role> opsManagerRoles = new HashSet<>();
             opsManagerRoles.add(operationsManagerRole);
             opsManagerUser.setRoles(opsManagerRoles);
@@ -116,7 +116,7 @@ public class DataLoader {
         // Centralized configuration for data loaders
         boolean shouldRecreateData = false;
 
-        busDataLoader.createBusRecords(shouldRecreateData, 50);
+        busDataLoader.createBusRecords(shouldRecreateData, 200);
         routeDataLoader.createRouteRecords(shouldRecreateData, 20);
         scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
         driverDataLoader.createDriverRecords(shouldRecreateData, 20);

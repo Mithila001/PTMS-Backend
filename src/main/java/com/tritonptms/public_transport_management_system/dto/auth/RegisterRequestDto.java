@@ -1,5 +1,7 @@
 package com.tritonptms.public_transport_management_system.dto.auth;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,7 +26,7 @@ public class RegisterRequestDto {
     private String nic;
 
     @NotBlank
-    private String role;
+    private List<String> roles;
 
     // Getters and Setters
 
@@ -60,11 +62,11 @@ public class RegisterRequestDto {
         this.nic = nic;
     }
 
-    public String getRole() {
-        return role;
+    public List<String> getRoles() {
+        return roles;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }
