@@ -5,8 +5,9 @@ import com.tritonptms.public_transport_management_system.model.Role;
 import com.tritonptms.public_transport_management_system.model.enums.users.ERole;
 import com.tritonptms.public_transport_management_system.repository.RoleRepository;
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterRequestDto;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterResponseDto;
+import com.tritonptms.public_transport_management_system.dto.user.UserUpdateDto;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -113,5 +114,37 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.delete(userToDelete);
+    }
+
+    @Override
+    public User updateUser(Long id, UserUpdateDto userUpdateDto) {
+        User userToUpdate = getUserById(id);
+
+        if (userUpdateDto.getFirstName() != null) {
+            userToUpdate.setFirstName(userUpdateDto.getFirstName());
+        }
+        if (userUpdateDto.getLastName() != null) {
+            userToUpdate.setLastName(userUpdateDto.getLastName());
+        }
+        if (userUpdateDto.getEmail() != null) {
+            userToUpdate.setEmail(userUpdateDto.getEmail());
+        }
+        if (userUpdateDto.getNic() != null) {
+            userToUpdate.setNic(userUpdateDto.getNic());
+        }
+
+        // Update roles if provided
+        if (userUpdateDto.getRoles() != null && !userUpdateDto.getRoles().isEmpty()) {
+            Set<Role> roles = new HashSet<>();
+            userUpdateDto.getRoles().forEach(role -> {
+                String upperCaseRole = role.toUpperCase();
+                Role assignedRole = roleRepository.findByName(upperCaseRole)
+                        .orElseThrow(() -> new RuntimeException("Error: Role '" + upperCaseRole + "' not found."));
+                roles.add(assignedRole);
+            });
+            userToUpdate.setRoles(roles);
+        }
+
+        return userRepository.save(userToUpdate);
     }
 }

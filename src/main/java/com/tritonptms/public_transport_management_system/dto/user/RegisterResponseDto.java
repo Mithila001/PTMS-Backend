@@ -1,4 +1,4 @@
-package com.tritonptms.public_transport_management_system.dto.auth;
+package com.tritonptms.public_transport_management_system.dto.user;
 
 public class RegisterResponseDto {
 

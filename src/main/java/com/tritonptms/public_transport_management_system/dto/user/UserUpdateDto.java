@@ -1,35 +1,15 @@
-package com.tritonptms.public_transport_management_system.dto.auth;
+package com.tritonptms.public_transport_management_system.dto.user;
 
 import java.util.List;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
-public class RegisterRequestDto {
-
-    @NotBlank
-    @Size(max = 50)
+public class UserUpdateDto {
     private String firstName;
-
-    @NotBlank
-    @Size(max = 50)
     private String lastName;
-
-    @NotBlank
-    @Size(max = 100)
-    @Email
-    private String email;
-
-    @NotBlank
-    @Size(max = 15)
     private String nic;
-
-    @NotBlank
+    private String email;
     private List<String> roles;
 
     // Getters and Setters
-
     public String getFirstName() {
         return firstName;
     }
@@ -46,20 +26,20 @@ public class RegisterRequestDto {
         this.lastName = lastName;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public String getNic() {
         return nic;
     }
 
     public void setNic(String nic) {
         this.nic = nic;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public List<String> getRoles() {

@@ -1,4 +1,4 @@
-package com.tritonptms.public_transport_management_system.dto;
+package com.tritonptms.public_transport_management_system.dto.user;
 
 import java.util.Set;
 import java.util.stream.Collectors;

@@ -9,13 +9,15 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tritonptms.public_transport_management_system.dto.UserResponseDto;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterRequestDto;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterResponseDto;
+import com.tritonptms.public_transport_management_system.dto.user.UserResponseDto;
+import com.tritonptms.public_transport_management_system.dto.user.UserUpdateDto;
 import com.tritonptms.public_transport_management_system.exception.ResourceNotFoundException;
 import com.tritonptms.public_transport_management_system.model.User;
 import com.tritonptms.public_transport_management_system.service.UserService;
@@ -84,6 +86,22 @@ public class UserController {
     public ResponseEntity<BaseResponse<Void>> deleteUserById(@PathVariable Long id) {
         userService.deleteUserById(id);
         return new ResponseEntity<>(BaseResponse.success(null, "User deleted successfully"), HttpStatus.OK);
+    }
+
+    /**
+     * Updates an existing user's information.
+     *
+     * @param id            The ID of the user to be updated.
+     * @param userUpdateDto DTO containing the user details to update.
+     * @return A ResponseEntity with the updated UserResponseDto.
+     * @throws ResourceNotFoundException if the user does not exist.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<BaseResponse<UserResponseDto>> updateUser(@PathVariable Long id,
+            @RequestBody UserUpdateDto userUpdateDto) {
+        User updatedUser = userService.updateUser(id, userUpdateDto);
+        UserResponseDto userDto = new UserResponseDto(updatedUser);
+        return new ResponseEntity<>(BaseResponse.success(userDto, "User updated successfully"), HttpStatus.OK);
     }
 
 }

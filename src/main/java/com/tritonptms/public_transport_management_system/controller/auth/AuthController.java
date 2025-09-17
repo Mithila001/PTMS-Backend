@@ -9,9 +9,10 @@ import com.tritonptms.public_transport_management_system.repository.RoleReposito
 import com.tritonptms.public_transport_management_system.repository.UserRepository;
 import com.tritonptms.public_transport_management_system.service.UserService;
 import com.tritonptms.public_transport_management_system.dto.auth.LoginRequest;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterRequestDto;
-import com.tritonptms.public_transport_management_system.dto.auth.RegisterResponseDto;
 import com.tritonptms.public_transport_management_system.dto.auth.UserInfoResponse;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterRequestDto;
+import com.tritonptms.public_transport_management_system.dto.user.RegisterResponseDto;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
