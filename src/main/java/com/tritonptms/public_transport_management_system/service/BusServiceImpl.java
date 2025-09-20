@@ -23,16 +23,12 @@ import java.util.Optional;
 @Service
 public class BusServiceImpl implements BusService {
 
-    private final ActionLogService actionLogService;
-    private final ObjectMapper objectMapper;
-
     private final BusRepository busRepository;
 
     @Autowired
-    public BusServiceImpl(BusRepository busRepository, ActionLogService actionLogService, ObjectMapper objectMapper) {
+    public BusServiceImpl(BusRepository busRepository) {
         this.busRepository = busRepository;
-        this.actionLogService = actionLogService;
-        this.objectMapper = objectMapper;
+
     }
 
     @Override
