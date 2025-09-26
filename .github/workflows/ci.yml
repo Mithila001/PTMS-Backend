@@ -1,34 +1,185 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+
+env:
+  JAVA_VERSION: "21"
+  JAVA_DISTRIBUTION: "temurin"
 
 jobs:
-  build-and-test:
+  test:
+    name: Test Application
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
-          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
+      - name: Cache Maven packages
+        uses: actions/cache@v3
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-      - name: Build and Run Tests with Maven
-        run: mvn clean install -Dspring.profiles.active=test
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+
+      - name: Run unit tests
+        run: ./mvnw test -Dspring.profiles.active=test
+        env:
+          DB_URL: jdbc:h2:mem:testdb
+
+      - name: Run integration tests with PostgreSQL
+        run: ./mvnw test -Dtest="*IntegrationTest" -Dspring.profiles.active=test
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/test_db
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_password
+
+      - name: Generate test report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Maven Tests
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Compile and check code
+        run: ./mvnw compile -q
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, code-quality]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t sri-lanka-bus-transport:latest .
+          docker tag sri-lanka-bus-transport:latest sri-lanka-bus-transport:${{ github.sha }}
+
+      - name: Test Docker image
+        run: |
+          # Start container in background
+          docker run -d --name test-container \
+            -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=test \
+            -e DB_URL=jdbc:h2:mem:testdb \
+            -e DB_USERNAME=sa \
+            -e DB_PASSWORD= \
+            sri-lanka-bus-transport:latest
+
+          # Wait for application to start
+          echo "Waiting for application to start..."
+          timeout 60 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 2; done'
+
+          # Check if application is healthy
+          response=$(curl -s http://localhost:8080/actuator/health | grep -o '"status":"UP"')
+          if [ "$response" = '"status":"UP"' ]; then
+            echo "✅ Application is healthy"
+          else
+            echo "❌ Application health check failed"
+            docker logs test-container
+            exit 1
+          fi
+
+          # Cleanup
+          docker stop test-container
+          docker rm test-container
+
+      - name: Save Docker image (for deployment)
+        if: success()
+        run: docker save sri-lanka-bus-transport:latest | gzip > sri-lanka-bus-transport.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: sri-lanka-bus-transport.tar.gz
+          retention-days: 1
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: docker load < sri-lanka-bus-transport.tar.gz
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "sri-lanka-bus-transport:latest"
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
