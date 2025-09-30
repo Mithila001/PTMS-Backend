@@ -109,6 +109,7 @@ The most consistent way to run the application and its dependencies is using Doc
 
 - **Docker Engine:** Required to build the application container and run the PostgreSQL database.
 - **Docker Compose:** Highly recommended for managing the application and database containers together with a single command.
+
   > [!TIP]
   > To simplify the setup, create a single **`docker-compose.yml`** file to build the backend (using the provided `Dockerfile`), frontend, and database services all at once. This enables one-command startup for the entire system.
 
