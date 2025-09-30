@@ -3,12 +3,23 @@ package com.tritonptms.public_transport_management_system.config;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 
 public class StartupPropertyValidator implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
         Environment env = applicationContext.getEnvironment();
+
+        // 1. Check if the 'prod' profile is active
+        boolean isProd = env.acceptsProfiles(Profiles.of("prod"));
+
+        if (!isProd) {
+            // Short explanation: We skip the strict check in non-production environments
+            // to allow for more flexible local development setup.
+            return;
+        }
+
         System.out.println("\n--- Running Pre-Context Configuration Check (Initializer) ---");
 
         String dbUrl = env.getProperty("DB_URL");
