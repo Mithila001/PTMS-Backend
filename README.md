@@ -86,13 +86,14 @@ To run and develop the **Public Transport Management System** locally, you will 
 
 ---
 
+> [!WARNING]
+> As of September 2025, the **PostGIS Extension** installation option may not yet be available in the Stack Builder for **PostgreSQL 18**. **PostgreSQL 17** is recommended for now to ensure smooth installation of the PostGIS extension.
+
 ### 🗃️ Database & Geospatial Services
 
 The system requires a running PostgreSQL instance with the PostGIS extension enabled to support the geospatial routing features.
 
 - **PostgreSQL 17 or newer:** The database server required for persistence.
-  > [!WARNING]
-  > As of September 2025, the **PostGIS Extension** installation option may not yet be available in the Stack Builder for **PostgreSQL 18**. **PostgreSQL 17** is recommended for now to ensure smooth installation of the PostGIS extension.
 - **PostGIS Extension:** Must be installed and enabled on the target database schema (e.g., via `CREATE EXTENSION postgis;`).
 - **Database Credentials:** You will need the following environment variables set for the application to connect:
   - `DB_URL` (e.g., `jdbc:postgresql://localhost:5432/ptms_db`)
