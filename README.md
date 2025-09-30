@@ -155,8 +155,8 @@ You must have **PostgreSQL 17+** installed and running before starting the appli
     | `COOKIE_SECURE`           | `false`                                               | Security setting for session cookie.                     |
     | `CORS_ALLOWED_ORIGINS`    | `"http://localhost:5173,http://localhost:3000"`       | Allowed frontend origins.                                |
 
-    > [!TIP]
-    > If you prefer running the application directly through an IDE (like the Spring Boot Dashboard) and want to skip using the PowerShell script, you can modify the **fallback credentials** in **`src/main/resources/application-dev.properties`**. Any properties set directly in this file will be used if the corresponding environment variable is not provided.
+> [!TIP]
+> If you prefer running the application directly through an IDE (like the Spring Boot Dashboard) and want to skip using the PowerShell script, you can modify the **fallback credentials** in **`src/main/resources/application-dev.properties`**. Any properties set directly in this file will be used if the corresponding environment variable is not provided.
 
 3.  **Run the Application (Recommended):** Use the provided PowerShell script to load environment variables and start the application. This approach ensures all necessary configurations are correctly applied.
 
