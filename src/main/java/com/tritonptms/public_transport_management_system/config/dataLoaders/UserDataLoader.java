@@ -36,17 +36,17 @@ public class UserDataLoader {
             String firstName,
             String lastName,
             String nic,
-            ERole role) {
+            Set<ERole> roles) {
     }
 
     // Define the list of initial users using the strongly-typed record
     private static final List<InitialUserData> DEFAULT_USERS = Arrays.asList(
             new InitialUserData("admin", "adminpass", "admin@example.com", "Admin", "User", "000100000V",
-                    ERole.ROLE_ADMIN),
+                    Set.of(ERole.ROLE_ADMIN, ERole.ROLE_OPERATIONS_MANAGER, ERole.ROLE_USER)),
             new InitialUserData("ops", "opspass", "ops@example.com", "Operations", "Manager", "020000001V",
-                    ERole.ROLE_OPERATIONS_MANAGER),
+                    Set.of(ERole.ROLE_OPERATIONS_MANAGER)),
             new InitialUserData("testuser", "testpass", "testuser@example.com", "Test", "User", "000000002V",
-                    ERole.ROLE_USER));
+                    Set.of(ERole.ROLE_USER)));
 
     public UserDataLoader(UserRepository userRepository, RoleRepository roleRepository,
             PasswordEncoder passwordEncoder) {
@@ -71,7 +71,8 @@ public class UserDataLoader {
 
         // 1. Create/Find all required roles first
         Set<String> requiredRoleNames = DEFAULT_USERS.stream()
-                .map(data -> data.role().name())
+                .flatMap(data -> data.roles().stream()) // Flatten the Set<ERole> for each user
+                .map(Enum::name) // Map each ERole to its String name
                 .collect(Collectors.toSet());
 
         // This method will only create the roles if they don't exist
@@ -120,9 +121,11 @@ public class UserDataLoader {
             if (!userRepository.existsByUsername(userData.username())) {
 
                 // Get the role object from the database/context
-                Role role = roleRepository.findByName(userData.role().name())
-                        .orElseThrow(() -> new RuntimeException(
-                                "Role not found during user creation: " + userData.role().name()));
+                Set<Role> userRoles = userData.roles().stream()
+                        .map(eRole -> roleRepository.findByName(eRole.name())
+                                .orElseThrow(() -> new RuntimeException(
+                                        "Role not found during user creation: " + eRole.name())))
+                        .collect(Collectors.toSet());
 
                 User newUser = new User(
                         userData.email(),
@@ -134,14 +137,12 @@ public class UserDataLoader {
                 // Encrypt the password from the data list
                 newUser.setPassword(passwordEncoder.encode(userData.rawPassword()));
 
-                Set<Role> userRoles = new HashSet<>();
-                userRoles.add(role);
                 newUser.setRoles(userRoles);
-
                 userRepository.save(newUser);
-                logger.info("Created default {} user: {}", userData.role().name(), userData.username());
+                logger.info("Created default user '{}' with roles: {}", userData.username(),
+                        userRoles.stream().map(Role::getName).collect(Collectors.joining(", ")));
             } else {
-                logger.info("Default {} user already exists: {}", userData.role().name(), userData.username());
+                logger.info("Default user '{}' already exists: {}", userData.username());
             }
         }
     }

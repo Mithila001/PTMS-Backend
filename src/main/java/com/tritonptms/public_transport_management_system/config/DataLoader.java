@@ -73,7 +73,7 @@ public class DataLoader {
         boolean shouldRecreateData = isDataLoadingEnabled;
 
         // Initialize new Users and Roles via UserDataLoader
-        userDataLoader.initializeDefaultUsersAndRoles(false);
+        userDataLoader.initializeDefaultUsersAndRoles(true);
 
         busDataLoader.createBusRecords(shouldRecreateData, 200);
         routeDataLoader.createRouteRecords(shouldRecreateData, 20);
