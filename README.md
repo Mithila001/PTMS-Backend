@@ -187,6 +187,220 @@ The application exposes a structured RESTful API accessible via the base URL: `h
 
 ---
 
+## 🐳 Docker Setup
+
+It is recommended to create a `docker-compose.yml` file to initiate all Frontend, Backend, and Database components of the project together.
+
+### Project Structure
+
+Create a new root directory to place all projects:
+
+```
+ptms-project-root/
+├── backend project/              # Backend Repository
+├── frontend project/             # Frontend Repository
+├── docker/                       # Docker configuration folder
+├── logs/                         # Application logs folder
+└── docker-compose.yml            # Docker Compose configuration
+```
+
+### Setup Instructions
+
+1. **Create the project root directory** and clone both repositories into it.
+
+2. **Create a `logs` folder** within the project root:
+
+   ```bash
+   mkdir logs
+   ```
+
+3. **Copy the `docker` folder (docker/)** from the backend project [docker folder](PTMS-Backend/docker) and paste it in the project root.
+
+4. **Create a `docker-compose.yml` file** in the project root with the following configuration:
+
+```yaml
+services:
+  # ----------------------------------------------------------------
+  # 1. PostgreSQL Database Service (Production Mock)
+  # ----------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: ptms_postgres_prod
+    environment:
+      POSTGRES_USER: ptms_user_docker
+      POSTGRES_PASSWORD: secret_docker
+      POSTGRES_DB: ptms_docker_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ptms-prod-db-data:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
+      - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ptms-prod-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ----------------------------------------------------------------
+  # 2. Backend Service (Production Configuration)
+  # ----------------------------------------------------------------
+  backend:
+    build:
+      context: ./public-transport-management-system
+      dockerfile: Dockerfile
+      args:
+        - SPRING_PROFILE=prod
+    container_name: ptms_backend_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Profile
+      SPRING_PROFILES_ACTIVE: prod
+
+      # Database Configuration (FIXED - matching application-prod.properties)
+      DB_URL: jdbc:postgresql://ptms_postgres_prod:5432/ptms_docker_db
+      DB_USERNAME: ptms_user_docker
+      DB_PASSWORD: secret_docker
+
+      # Data Loader Control
+      DEV_DATA_LOADER_ENABLED: "true" # Enable/disable sample data population
+      SHOULD_CREATE_INITIAL_USERS: "true" # Create initial users and roles if not present
+
+      # CORS Configuration
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+
+      # Cookie Security
+      COOKIE_SECURE: "false" # Set to false for local testing, true for real production
+
+      # JVM Options (Production)
+      JAVA_OPTS: >
+        -XX:+UseContainerSupport 
+        -XX:MaxRAMPercentage=75.0 
+        -XX:+UseG1GC 
+        -XX:+UseStringDeduplication
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/app/logs/
+        -Djava.security.egd=file:/dev/./urandom
+        -Dspring.profiles.active=prod
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+    networks:
+      - ptms-prod-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    volumes:
+      - ./logs:/app/logs
+
+  # ----------------------------------------------------------------
+  # 3. Frontend Service (Production Build)
+  # ----------------------------------------------------------------
+  frontend:
+    container_name: ptms_frontend_prod
+    build:
+      context: ./ptms-frontEnd
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - REACT_APP_API_URL=http://localhost:8080/api
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ptms-prod-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+# ----------------------------------------------------------------
+# Production Volumes and Networks
+# ----------------------------------------------------------------
+volumes:
+  ptms-prod-db-data:
+    driver: local
+
+networks:
+  ptms-prod-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+> [!IMPORTANT]
+> Make sure the file path directories in the `context` fields match your project structure:
+>
+> - **Backend**: `context: Backend project root folder name`
+> - **Frontend**: `context: Frontend project root folder name`
+
+### Configuration Options
+
+- **`SHOULD_CREATE_INITIAL_USERS`**: It is recommended to keep this enabled to create default admin and user accounts.
+- **`DEV_DATA_LOADER_ENABLED`**: You can disable sample data population by setting this to `"false"` if you prefer to start with an empty database.
+
+### Running the Application
+
+1. **Navigate to the project root directory** (where `docker-compose.yml` is located).
+
+2. **Start all services** with Docker Compose:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the application**:
+
+   - **Frontend**: [http://localhost:5173](http://localhost:5173)
+   - **Backend API**: [http://localhost:8080](http://localhost:8080)
+   - **Database**: `localhost:5433`
+
+4. **View logs** (optional):
+
+   ```bash
+   docker-compose logs -f
+   ```
+
+5. **Stop all services**:
+   ```bash
+   docker-compose down
+   ```
+
+> [!TIP]
+> Use `docker-compose down -v` to remove volumes and reset the database to its initial state.
+
+---
+
 ### Authentication & User Management
 
 These endpoints handle user security, session management, and basic user registration.

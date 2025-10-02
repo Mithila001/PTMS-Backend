@@ -13,6 +13,8 @@ public class StartupPropertyValidator implements ApplicationContextInitializer<C
 
         // 1. Check if the 'prod' profile is active
         boolean isProd = env.acceptsProfiles(Profiles.of("prod"));
+        System.out.println("Active Profiles: " + String.join(", ",
+                env.getActiveProfiles()));
 
         if (!isProd) {
             // Short explanation: We skip the strict check in non-production environments
@@ -21,6 +23,11 @@ public class StartupPropertyValidator implements ApplicationContextInitializer<C
         }
 
         System.out.println("\n--- Running Pre-Context Configuration Check (Initializer) ---");
+
+        // Print all active profiles
+        System.out.println("Active Profiles: " + String.join(", ", env.getActiveProfiles()));
+        System.out.println("DB_URL: " + env.getProperty("DB_URL"));
+        System.out.println("DB_USERNAME: " + env.getProperty("DB_USERNAME"));
 
         String dbUrl = env.getProperty("DB_URL");
         String dbUsername = env.getProperty("DB_USERNAME");

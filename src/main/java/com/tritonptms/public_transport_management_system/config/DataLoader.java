@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-@Profile("dev")
 @Component
 public class DataLoader {
 
@@ -46,6 +45,8 @@ public class DataLoader {
 
     @Value("${DEV_DATA_LOADER_ENABLED:false}")
     private boolean isDataLoadingEnabled;
+    @Value("${SHOULD_CREATE_INITIAL_USERS:false}")
+    private boolean shouldCreateInitialUsers;
 
     // Use a single, clean constructor for dependency injection
     public DataLoader(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
@@ -69,18 +70,25 @@ public class DataLoader {
     public void init() {
         logger.info("Initializing default roles and users...");
 
-        // Centralized configuration for data loaders
-        boolean shouldRecreateData = isDataLoadingEnabled;
+        if (shouldCreateInitialUsers || isDataLoadingEnabled) {
+            // Centralized configuration for data loaders
+            boolean shouldRecreateData = isDataLoadingEnabled;
 
-        // Initialize new Users and Roles via UserDataLoader
-        userDataLoader.initializeDefaultUsersAndRoles(true);
+            // Initialize new Users and Roles via UserDataLoader
+            userDataLoader.initializeDefaultUsersAndRoles(shouldCreateInitialUsers);
 
-        busDataLoader.createBusRecords(shouldRecreateData, 200);
-        routeDataLoader.createRouteRecords(shouldRecreateData, 20);
-        scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
-        driverDataLoader.createDriverRecords(shouldRecreateData, 20);
-        conductorDataLoader.createConductorRecords(shouldRecreateData, 20);
-        assignmentDataLoader.createAssignmentRecords(shouldRecreateData, 30);
+            busDataLoader.createBusRecords(shouldRecreateData, 200);
+            routeDataLoader.createRouteRecords(shouldRecreateData, 20);
+            scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
+            driverDataLoader.createDriverRecords(shouldRecreateData, 20);
+            conductorDataLoader.createConductorRecords(shouldRecreateData, 20);
+            assignmentDataLoader.createAssignmentRecords(shouldRecreateData, 30);
+
+        } else {
+            logger.info("Data loading is disabled. Skipping data initialization.");
+        }
+        logger.info("Data loading process completed.");
+
     }
 
 }
