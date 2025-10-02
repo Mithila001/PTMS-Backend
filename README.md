@@ -214,7 +214,7 @@ ptms-project-root/
    mkdir logs
    ```
 
-3. **Copy the `docker` folder (docker/)** from the backend project [docker folder](PTMS-Backend/docker) and paste it in the project root.
+3. **Copy the `docker` folder (docker/)** from the backend project [docker folder](PTMS-Backend/\_Full Stack Setup Files) and paste it in the project root.
 
 4. **Create a `docker-compose.yml` file** in the project root with the following configuration:
 
