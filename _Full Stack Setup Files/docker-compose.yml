@@ -37,7 +37,7 @@ services:
   # ----------------------------------------------------------------
   backend:
     build:
-      context: ./public-transport-management-system
+      context: ./PTMS-Backend
       dockerfile: Dockerfile
       args:
         - SPRING_PROFILE=prod
@@ -78,7 +78,8 @@ services:
         -Dspring.profiles.active=prod
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
