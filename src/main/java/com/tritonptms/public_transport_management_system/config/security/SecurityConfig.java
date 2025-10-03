@@ -85,10 +85,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .deleteCookies("JSESSIONID")
-                        .permitAll())
+                // .logout(logout -> logout
+                // .logoutUrl("/api/auth/logout")
+                // .deleteCookies("JSESSIONID")
+                // .permitAll())
                 .authorizeHttpRequests(authorize -> authorize
                         // Publicly Accessible Endpoints (Auth, Public Info, Utilities)
                         .requestMatchers("/api/auth/**").permitAll()

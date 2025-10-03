@@ -1,5 +1,42 @@
 # Public Transport Management System - Backend API
 
+## 📖 Table of Contents
+
+- [Public Transport Management System - Backend API](#public-transport-management-system---backend-api)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [🚌 Overview](#-overview)
+  - [🏗️ Architecture \& Technology Stack](#️-architecture--technology-stack)
+  - [🚀 Core Features \& Professional Practices](#-core-features--professional-practices)
+    - [🛡️ Secure \& Structured API Design](#️-secure--structured-api-design)
+    - [💾 Advanced Data Handling \& Auditing](#-advanced-data-handling--auditing)
+    - [⚙️ Development, Deployment, \& Production Readiness](#️-development-deployment--production-readiness)
+- [Project Setup](#project-setup)
+  - [📋 Prerequisites](#-prerequisites)
+    - [💻 Development Environment](#-development-environment)
+    - [🗃️ Database \& Geospatial Services](#️-database--geospatial-services)
+  - [🛠️ Installation \& Setup (Non-Docker)](#️-installation--setup-non-docker)
+    - [1. Database Setup (PostgreSQL with PostGIS)](#1-database-setup-postgresql-with-postgis)
+    - [2. Backend Application Setup](#2-backend-application-setup)
+    - [3. Post-Setup \& Access](#3-post-setup--access)
+  - [🌐 Main API Endpoints](#-main-api-endpoints)
+  - [🐳 Docker Setup](#-docker-setup)
+    - [Project Structure](#project-structure)
+    - [Setup Instructions](#setup-instructions)
+    - [Configuration Options](#configuration-options)
+    - [Running the Application](#running-the-application)
+    - [Authentication \& User Management](#authentication--user-management)
+    - [Route Management](#route-management)
+    - [Vehicle Management](#vehicle-management)
+    - [Employee Management](#employee-management)
+    - [Assignment \& Trip Management](#assignment--trip-management)
+    - [Utility \& Diagnostics](#utility--diagnostics)
+  - [📁 Project Structure](#-project-structure)
+  - [👥 Default Users (Development Environment)](#-default-users-development-environment)
+  - [📄 License](#-license)
+  - [🔄 Version History](#-version-history)
+
+---
+
 A robust Spring Boot 3 RESTful API backend for digitalizing and managing public bus transport operations in Sri Lanka. This system focuses on comprehensive Bus, Route, and Employee assignment management, backed by strong professional practices and advanced data handling.
 
 ## 🚌 Overview
@@ -77,12 +114,12 @@ Practices put in place to ensure the project is easy to set up, deploy, and main
 
 # Project Setup
 
-This project can setup in 2 different methods.
+You can set up this project using one of two methods:
 
 1.  [Direct local setup](#installation-setup-non-docker)
-2.  Docker Setup
+2.  [Docker Setup](#installation-setup-docker)
 
-For quick build, the docker setup is recommeded. The docker
+The **Docker setup** is recommended for a quicker build process.
 
 ## 📋 Prerequisites
 
@@ -103,7 +140,7 @@ To run and develop the **Public Transport Management System** locally, you will 
 
 The system requires a running PostgreSQL instance with the PostGIS extension enabled to support the geospatial routing features.
 
-- **PostgreSQL 17 or newer:** The database server required for persistence.
+- **PostgreSQL 17 :** The database server required for persistence.
 
 > [!WARNING]
 > As of September 2025, the **PostGIS Extension** installation option may not yet be available in the Stack Builder for **PostgreSQL 18**. **PostgreSQL 17** is recommended for now to ensure smooth installation of the PostGIS extension.
@@ -116,17 +153,7 @@ The system requires a running PostgreSQL instance with the PostGIS extension ena
 
 ---
 
-### 🐋 Containerization (Recommended Setup)
-
-The most consistent way to run the application and its dependencies is using Docker.
-
-- **Docker Engine:** Required to build the application container and run the PostgreSQL database.
-- **Docker Compose:** Highly recommended for managing the application and database containers together with a single command.
-
-> [!TIP]
-> To simplify the setup, create a single **`docker-compose.yml`** file to build the backend (using the provided `Dockerfile`), frontend, and database services all at once. This enables one-command startup for the entire system.
-
----
+<a id="installation-setup-non-docker"></a>
 
 ## 🛠️ Installation & Setup (Non-Docker)
 
@@ -171,15 +198,25 @@ You must have **PostgreSQL 17+** installed and running before starting the appli
 > [!TIP]
 > If you prefer running the application directly through an IDE (like the Spring Boot Dashboard) and want to skip using the PowerShell script, you can modify the **fallback credentials** in **`src/main/resources/application-dev.properties`**. Any properties set directly in this file will be used if the corresponding environment variable is not provided.
 
-3.  **Run the Application (Recommended):** Use the provided PowerShell script to load environment variables and start the application. This approach ensures all necessary configurations are correctly applied.
+3. **Run the Application (Recommended):** Use the provided PowerShell script to load environment variables and start the application. This approach ensures all necessary configurations are correctly applied.
 
-    - **Requires:** **PowerShell** on your system.
-    - **Command:**
-      ```bash
-      .\scripts\run-dev.ps1
-      ```
+   - **Requires:** **PowerShell** on your system.
+   - **Command (Run from the backend project root):**
+     ```bash
+     .\scripts\run-dev.ps1
+     ```
 
-4.  **Wait for Startup:** The application startup is successful when the console displays a log message similar to: `Started PublicTransportManagementSystem... in X.XXX seconds`.
+4. **Wait for Startup:** The application startup is successful when the console displays a log message similar to: `tarted PublicTransportManagementSystemApplication in X.XXX seconds`.
+
+5. **Start the Frontend and Login:**
+
+   - Navigate to the **frontend project root** directory.
+   - Run the following command to start the frontend application:
+     ```bash
+     npm run dev
+     ```
+   - Once the frontend is running, open the provided website URL in your browser.
+   - Log in using the initial, auto-generated credentials, which can be found in the **[Default Users](#default-users)** section.
 
 ---
 
@@ -200,13 +237,13 @@ The application exposes a structured RESTful API accessible via the base URL: `h
 
 ---
 
+<a id="installation-setup-docker"></a>
+
 ## 🐳 Docker Setup
 
 It is recommended to create a `docker-compose.yml` file to initiate all Frontend, Backend, and Database components of the project together.
 
 ### Project Structure
-
-Create a new root directory to place all projects:
 
 ```
 ptms-project-root/
@@ -227,160 +264,20 @@ ptms-project-root/
    mkdir logs
    ```
 
-3. **Copy the `docker` folder (docker/)** from the backend project [docker folder](PTMS-Backend/\_Full Stack Setup Files) and paste it in the project root.
-
-4. **Create a `docker-compose.yml` file** in the project root with the following configuration:
-
-```yaml
-services:
-  # ----------------------------------------------------------------
-  # 1. PostgreSQL Database Service (Production Mock)
-  # ----------------------------------------------------------------
-  postgres:
-    image: postgis/postgis:16-3.4-alpine
-    container_name: ptms_postgres_prod
-    environment:
-      POSTGRES_USER: ptms_user_docker
-      POSTGRES_PASSWORD: secret_docker
-      POSTGRES_DB: ptms_docker_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
-    ports:
-      - "5433:5432"
-    volumes:
-      - ptms-prod-db-data:/var/lib/postgresql/data
-      - ./docker/init:/docker-entrypoint-initdb.d
-      - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - ptms-prod-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-
-  # ----------------------------------------------------------------
-  # 2. Backend Service (Production Configuration)
-  # ----------------------------------------------------------------
-  backend:
-    build:
-      context: ./PTMS-Backend
-      dockerfile: Dockerfile
-      args:
-        - SPRING_PROFILE=prod
-    container_name: ptms_backend_prod
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "8080:8080"
-    environment:
-      # Profile
-      SPRING_PROFILES_ACTIVE: prod
-
-      # Database Configuration (FIXED - matching application-prod.properties)
-      DB_URL: jdbc:postgresql://ptms_postgres_prod:5432/ptms_docker_db
-      DB_USERNAME: ptms_user_docker
-      DB_PASSWORD: secret_docker
-
-      # Data Loader Control
-      DEV_DATA_LOADER_ENABLED: "true" # Enable/disable sample data population
-      SHOULD_CREATE_INITIAL_USERS: "true" # Create initial users and roles if not present
-
-      # CORS Configuration
-      CORS_ALLOWED_ORIGINS: http://localhost:5173
-
-      # Cookie Security
-      COOKIE_SECURE: "false" # Set to false for local testing, true for real production
-
-      # JVM Options (Production)
-      JAVA_OPTS: >
-        -XX:+UseContainerSupport 
-        -XX:MaxRAMPercentage=75.0 
-        -XX:+UseG1GC 
-        -XX:+UseStringDeduplication
-        -XX:+HeapDumpOnOutOfMemoryError
-        -XX:HeapDumpPath=/app/logs/
-        -Djava.security.egd=file:/dev/./urandom
-        -Dspring.profiles.active=prod
-
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 90s
-
-    networks:
-      - ptms-prod-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
-    volumes:
-      - ./logs:/app/logs
-
-  # ----------------------------------------------------------------
-  # 3. Frontend Service (Production Build)
-  # ----------------------------------------------------------------
-  frontend:
-    container_name: ptms_frontend_prod
-    build:
-      context: ./ptms-frontEnd
-      dockerfile: Dockerfile
-      args:
-        - NODE_ENV=production
-        - REACT_APP_API_URL=http://localhost:8080/api
-    ports:
-      - "5173:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - ptms-prod-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-        reservations:
-          memory: 64M
-
-# ----------------------------------------------------------------
-# Production Volumes and Networks
-# ----------------------------------------------------------------
-volumes:
-  ptms-prod-db-data:
-    driver: local
-
-networks:
-  ptms-prod-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-```
+3. **Copy the following files and folders** from the backend project's path (`PTMS-Backend/full-stack-setup-files`) and place them into the project root:
+   - The `docker` folder
+   - The `docker-compose.yml` file
 
 > [!IMPORTANT]
-> Make sure the file path directories in the `context` fields match your project structure:
+> If you have modified the project structure, ensure that the file path directories in the `context` fields match your current layout:
 >
-> - **Backend**: `context: Backend project root folder name`
-> - **Frontend**: `context: Frontend project root folder name`
+> - **Backend**: `context: Backend project folder name`
+> - **Frontend**: `context: Frontend project folder name`
 
 ### Configuration Options
 
-- **`SHOULD_CREATE_INITIAL_USERS`**: It is recommended to keep this enabled to create default admin and user accounts.
-- **`DEV_DATA_LOADER_ENABLED`**: You can disable sample data population by setting this to `"false"` if you prefer to start with an empty database.
+- **`SHOULD_CREATE_INITIAL_USERS`**: It is highly recommended to keep this enabled to create default admin and user accounts.
+- **`DEV_DATA_LOADER_ENABLED`**: You can disable sample data population by setting this to `"false"` if you prefer to start with an empty database records.
 
 ### Running the Application
 
@@ -408,6 +305,11 @@ networks:
    ```bash
    docker-compose down
    ```
+6. **Access the Application and Log In**:
+
+   - Once the Docker containers are successfully built and running, open the following URL in your web browser:
+     **[http://localhost:5173](http://localhost:5173)**
+   - Log in to the application using the initial, auto-generated credentials, which can be found in the **[Default Users](#default-users)** section.
 
 > [!TIP]
 > Use `docker-compose down -v` to remove volumes and reset the database to its initial state.
@@ -521,6 +423,8 @@ public-transport-management-system/
 │       ├── controller/
 │       └── service/
 ```
+
+<a id="default-users"></a>
 
 ## 👥 Default Users (Development Environment)
 

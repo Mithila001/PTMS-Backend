@@ -77,7 +77,7 @@ public class DataLoader {
             // Initialize new Users and Roles via UserDataLoader
             userDataLoader.initializeDefaultUsersAndRoles(shouldCreateInitialUsers);
 
-            busDataLoader.createBusRecords(shouldRecreateData, 200);
+            busDataLoader.createBusRecords(shouldRecreateData, 50);
             routeDataLoader.createRouteRecords(shouldRecreateData, 20);
             scheduledTripDataLoader.createScheduledTripRecords(shouldRecreateData, 20);
             driverDataLoader.createDriverRecords(shouldRecreateData, 20);

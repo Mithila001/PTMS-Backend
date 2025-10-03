@@ -139,10 +139,15 @@ public class UserDataLoader {
 
                 newUser.setRoles(userRoles);
                 userRepository.save(newUser);
+                logger.error("!!! FATAL: USER '{}' JUST CREATED WITH HASH: {}",
+                        userData.username(),
+                        newUser.getPassword());
                 logger.info("Created default user '{}' with roles: {}", userData.username(),
                         userRoles.stream().map(Role::getName).collect(Collectors.joining(", ")));
             } else {
                 logger.info("Default user '{}' already exists: {}", userData.username());
+                userRepository.findByUsername(userData.username())
+                        .ifPresent(u -> logger.warn("Existing User '{}' HASH: {}", u.getUsername(), u.getPassword()));
             }
         }
     }
