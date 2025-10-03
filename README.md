@@ -71,6 +71,19 @@ Practices put in place to ensure the project is easy to set up, deploy, and main
 - **Automated Data Seeding:** Configurable data loaders (`@Profile("dev")`) are used to automatically generate sample data on startup for rapid local environment setup.
 - **Clear Separation of Concerns:** Adherence to MVC principles with distinct packages for Controllers, Services, Repositories, and DTOs.
 
+---
+
+---
+
+# Project Setup
+
+This project can setup in 2 different methods.
+
+1.  [Direct local setup](#installation-setup-non-docker)
+2.  Docker Setup
+
+For quick build, the docker setup is recommeded. The docker
+
 ## 📋 Prerequisites
 
 To run and develop the **Public Transport Management System** locally, you will need the following tools and services installed and configured on your machine.
@@ -513,11 +526,11 @@ public-transport-management-system/
 
 The system automatically creates default users when running in development mode:
 
-| Username   | Password    | Role               | Description                 |
-| ---------- | ----------- | ------------------ | --------------------------- |
-| `admin`    | `adminpass` | ADMIN              | Full system access          |
+| Username   | Password    | Role               | Description           |
+| ---------- | ----------- | ------------------ | --------------------- |
+| `admin`    | `adminpass` | ADMIN              | Full system access    |
 | `ops`      | `opspass`   | OPERATIONS_MANAGER | Exclude User and Logs |
-| `testuser` | `testpass`  | USER               | Bus and Route            |
+| `testuser` | `testpass`  | USER               | Bus and Route         |
 
 > [!NOTE]
 > The exact credentials are set and initially loaded by the [UserDataLoader.java](src/main/java/com/tritonptms/public_transport_management_system/config/dataLoaders/UserDataLoader.java) file.
