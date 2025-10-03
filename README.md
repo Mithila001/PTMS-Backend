@@ -258,7 +258,7 @@ services:
   # ----------------------------------------------------------------
   backend:
     build:
-      context: ./public-transport-management-system
+      context: ./PTMS-Backend
       dockerfile: Dockerfile
       args:
         - SPRING_PROFILE=prod
