@@ -516,8 +516,8 @@ The system automatically creates default users when running in development mode:
 | Username   | Password    | Role               | Description                 |
 | ---------- | ----------- | ------------------ | --------------------------- |
 | `admin`    | `adminpass` | ADMIN              | Full system access          |
-| `ops`      | `opspass`   | OPERATIONS_MANAGER | Route & employee management |
-| `testuser` | `testpass`  | USER               | Read-only access            |
+| `ops`      | `opspass`   | OPERATIONS_MANAGER | Exclude User and Logs |
+| `testuser` | `testpass`  | USER               | Bus and Route            |
 
 > [!NOTE]
 > The exact credentials are set and initially loaded by the [UserDataLoader.java](src/main/java/com/tritonptms/public_transport_management_system/config/dataLoaders/UserDataLoader.java) file.
