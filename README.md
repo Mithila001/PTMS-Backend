@@ -139,7 +139,7 @@ You must have **PostgreSQL 17+** installed and running before starting the appli
 
 1.  **Clone the Repository:**
     ```bash
-    git clone [Your Repository URL Here]
+    git clone https://github.com/Mithila001/PTMS-Backend.git
     cd public-transport-management-system
     ```
 2.  **Create Environment File:** Create a file named **`.env.dev`** in the project root based on an `.env.example` template and populate it with your desired credentials.
