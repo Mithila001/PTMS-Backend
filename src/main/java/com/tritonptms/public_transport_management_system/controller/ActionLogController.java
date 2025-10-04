@@ -18,7 +18,7 @@ public class ActionLogController {
     }
 
     /**
-     * Retrieves all action logs from the central table, ordered by timestamp.
+     * Retrieves all action logs from the central table, ordered by timestamp 1.
      */
     @GetMapping("/all")
     public List<ActionLog> getAllActionLogs() {
