@@ -1,5 +1,6 @@
 package com.tritonptms.ptms.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tritonptms.ptms.common.config.AppProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -7,35 +8,69 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
+    private final ObjectMapper objectMapper;
+    private final CustomAuthenticationSuccessHandler successHandler;
+    private final CustomAuthenticationFailureHandler failureHandler;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
 
-    public SecurityConfig(UserDetailsServiceImpl userDetailsService, AppProperties appProperties) {
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService,
+            AppProperties appProperties,
+            ObjectMapper objectMapper,
+            CustomAuthenticationSuccessHandler successHandler,
+            CustomAuthenticationFailureHandler failureHandler,
+            RestAuthenticationEntryPoint authenticationEntryPoint,
+            RestAccessDeniedHandler accessDeniedHandler) {
         this.userDetailsService = userDetailsService;
         this.appProperties = appProperties;
+        this.objectMapper = objectMapper;
+        this.successHandler = successHandler;
+        this.failureHandler = failureHandler;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
     }
 
     @Bean
@@ -45,58 +80,65 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CustomAuthenticationSuccessHandler authenticationSuccessHandler() {
-        return new CustomAuthenticationSuccessHandler();
+    public SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository());
     }
 
     @Bean
-    public CustomAuthenticationFailureHandler authenticationFailureHandler() {
-        return new CustomAuthenticationFailureHandler();
-    }
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            AuthenticationManager authenticationManager,
+            DaoAuthenticationProvider authenticationProvider,
+            SecurityContextRepository securityContextRepository) throws Exception {
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+        JsonUsernamePasswordAuthenticationFilter jsonLoginFilter =
+                new JsonUsernamePasswordAuthenticationFilter(objectMapper);
+        jsonLoginFilter.setAuthenticationManager(authenticationManager);
+        jsonLoginFilter.setAuthenticationSuccessHandler(successHandler);
+        jsonLoginFilter.setAuthenticationFailureHandler(failureHandler);
+        jsonLoginFilter.setSecurityContextRepository(securityContextRepository);
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authManager)
-            throws Exception {
-        JsonUsernamePasswordAuthenticationFilter jsonFilter = new JsonUsernamePasswordAuthenticationFilter();
-        jsonFilter.setAuthenticationManager(authManager);
-        jsonFilter.setFilterProcessesUrl("/api/auth/login");
-        jsonFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler());
-        jsonFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
-        http.addFilterAt(jsonFilter, UsernamePasswordAuthenticationFilter.class);
+        CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfRepository.setCookiePath("/");
+        CsrfTokenRequestAttributeHandler csrfRequestHandler = new CsrfTokenRequestAttributeHandler();
+        SessionAuthenticationStrategy sessionAuthenticationStrategy = new CompositeSessionAuthenticationStrategy(List.of(
+                new ChangeSessionIdAuthenticationStrategy(),
+                new CsrfAuthenticationStrategy(csrfRepository)));
+        jsonLoginFilter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy);
 
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .authenticationProvider(authenticationProvider)
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfRepository)
+                        .csrfTokenRequestHandler(csrfRequestHandler))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**", "/api/public/**", "/api/enums/**", "/actuator/health")
+                        .requestMatchers("/api/auth/login", "/api/auth/csrf", "/api/public/**", "/api/enums/**",
+                                "/actuator/health")
                         .permitAll()
                         .requestMatchers("/api/buses/**", "/api/routes/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATIONS_MANAGER", "ROLE_USER")
+                        .hasAnyRole("ADMIN", "OPERATIONS_MANAGER", "USER")
                         .requestMatchers("/api/assignments/**", "/api/scheduled-trips/**", "/api/drivers/**",
                                 "/api/conductors/**", "/api/employees/**", "/api/dashboard/**",
                                 "/api/operations/**", "/api/action-logs/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_OPERATIONS_MANAGER")
+                        .hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
                         .requestMatchers("/api/audit/**", "/api/users/**", "/api/logs/**", "/api/admin/**")
-                        .hasAuthority("ROLE_ADMIN")
+                        .hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .formLogin(formLogin -> formLogin
-                        .loginProcessingUrl("/api/auth/login")
-                        .successHandler(authenticationSuccessHandler())
-                        .failureHandler(authenticationFailureHandler())
-                        .permitAll())
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    response.getWriter().write(
-                            "{\"error\": \"Unauthorized\", \"message\": \"Authentication is required to access this resource.\"}");
-                }));
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessHandler((request, response, authentication) ->
+                                response.setStatus(HttpServletResponse.SC_NO_CONTENT)))
+                .addFilterAt(jsonLoginFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -105,14 +147,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         List<String> origins = appProperties.cors().allowedOrigins();
-
         if (origins.contains("*")) {
             configuration.setAllowedOriginPatterns(List.of("*"));
         } else {
             configuration.setAllowedOrigins(origins);
         }
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN", "X-CSRF-TOKEN"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

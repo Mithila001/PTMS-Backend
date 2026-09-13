@@ -1,25 +1,24 @@
 package com.tritonptms.ptms.audit;
 
+import com.tritonptms.ptms.audit.dto.ActionLogResponse;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import org.springframework.data.domain.Sort;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/action-logs")
 public class ActionLogController {
 
-    private final ActionLogRepository actionLogRepository;
+    private final ActionLogService actionLogService;
 
-    public ActionLogController(ActionLogRepository actionLogRepository) {
-        this.actionLogRepository = actionLogRepository;
+    public ActionLogController(ActionLogService actionLogService) {
+        this.actionLogService = actionLogService;
     }
 
-    /**
-     * Retrieves all action logs from the central table, ordered by timestamp 1.
-     */
-    @GetMapping("/all")
-    public List<ActionLog> getAllActionLogs() {
-        return actionLogRepository.findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
+    @GetMapping
+    public List<ActionLogResponse> getAllActionLogs() {
+        return actionLogService.getAllActionLogs();
     }
 }

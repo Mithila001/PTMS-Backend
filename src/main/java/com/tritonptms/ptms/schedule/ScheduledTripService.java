@@ -1,108 +1,85 @@
 package com.tritonptms.ptms.schedule;
 
-import com.tritonptms.ptms.schedule.dto.ScheduledTripDto;
+import com.tritonptms.ptms.common.exception.BadRequestException;
+import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
 import com.tritonptms.ptms.route.Route;
 import com.tritonptms.ptms.route.RouteRepository;
-import com.tritonptms.ptms.route.RouteService;
-import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
+import com.tritonptms.ptms.schedule.dto.ScheduledTripRequest;
+import com.tritonptms.ptms.schedule.dto.ScheduledTripResponse;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@PreAuthorize("hasAnyRole('ADMIN','OPERATIONS_MANAGER')")
 public class ScheduledTripService {
 
     private final ScheduledTripRepository scheduledTripRepository;
     private final RouteRepository routeRepository;
-    private final RouteService routeService;
+    private final ScheduledTripMapper scheduledTripMapper;
 
-    public ScheduledTripService(ScheduledTripRepository scheduledTripRepository, RouteRepository routeRepository,
-            RouteService routeService) {
+    public ScheduledTripService(ScheduledTripRepository scheduledTripRepository,
+            RouteRepository routeRepository,
+            ScheduledTripMapper scheduledTripMapper) {
         this.scheduledTripRepository = scheduledTripRepository;
         this.routeRepository = routeRepository;
-        this.routeService = routeService;
+        this.scheduledTripMapper = scheduledTripMapper;
     }
 
-    public List<ScheduledTripDto> getAllScheduledTrips() {
-        return scheduledTripRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public List<ScheduledTripResponse> getAllScheduledTrips() {
+        return scheduledTripRepository.findAll().stream().map(scheduledTripMapper::toResponse).toList();
     }
 
-    public Optional<ScheduledTripDto> getScheduledTripById(Long id) {
-        return scheduledTripRepository.findById(id)
-                .map(this::convertToDto);
+    public ScheduledTripResponse getScheduledTripById(Long id) {
+        return scheduledTripMapper.toResponse(findTrip(id));
     }
 
     @Transactional
-    public ScheduledTrip saveScheduledTrip(ScheduledTripDto scheduledTripDto) {
-        ScheduledTrip scheduledTrip = convertToEntity(scheduledTripDto);
-        return scheduledTripRepository.save(scheduledTrip);
+    public ScheduledTripResponse createScheduledTrip(ScheduledTripRequest request) {
+        validateTimes(request);
+        ScheduledTrip trip = scheduledTripMapper.fromRequest(request);
+        trip.setRoute(findRoute(request.routeId()));
+        return scheduledTripMapper.toResponse(scheduledTripRepository.save(trip));
+    }
+
+    @Transactional
+    public ScheduledTripResponse updateScheduledTrip(Long id, ScheduledTripRequest request) {
+        validateTimes(request);
+        ScheduledTrip trip = findTrip(id);
+        scheduledTripMapper.apply(trip, request);
+        trip.setRoute(findRoute(request.routeId()));
+        return scheduledTripMapper.toResponse(scheduledTripRepository.save(trip));
     }
 
     @Transactional
     public void deleteScheduledTrip(Long id) {
-        scheduledTripRepository.deleteById(id);
+        scheduledTripRepository.delete(findTrip(id));
     }
 
-    public ScheduledTripDto convertToDto(ScheduledTrip scheduledTrip) {
-        ScheduledTripDto dto = new ScheduledTripDto();
-        dto.setId(scheduledTrip.getId());
-        dto.setDirection(scheduledTrip.getDirection());
-        dto.setExpectedStartTime(scheduledTrip.getExpectedStartTime());
-        dto.setExpectedEndTime(scheduledTrip.getExpectedEndTime());
-
-        // Convert the nested Route entity to RouteDto
-        if (scheduledTrip.getRoute() != null) {
-            dto.setRoute(routeService.convertToDto(scheduledTrip.getRoute()));
-        }
-
-        return dto;
-    }
-
-    public ScheduledTrip convertToEntity(ScheduledTripDto scheduledTripDto) {
-        ScheduledTrip entity = new ScheduledTrip();
-        if (scheduledTripDto.getId() != null) {
-            entity.setId(scheduledTripDto.getId());
-        }
-        entity.setDirection(scheduledTripDto.getDirection());
-        entity.setExpectedStartTime(scheduledTripDto.getExpectedStartTime());
-        entity.setExpectedEndTime(scheduledTripDto.getExpectedEndTime());
-
-        // Use the ID from the DTO to find and set the Route entity
-        if (scheduledTripDto.getRoute() != null && scheduledTripDto.getRoute().getId() != null) {
-            Route route = routeRepository.findById(scheduledTripDto.getRoute().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Route not found with id: " + scheduledTripDto.getRoute().getId()));
-            entity.setRoute(route);
-        }
-
-        return entity;
-    }
-
-    public List<ScheduledTrip> searchScheduledTrips(String scheduledTripRouteNumber, Direction direction) {
-        // Long routeNumber = null;
-        // try {
-        // if (scheduledTripRouteNumber != null && !scheduledTripRouteNumber.isEmpty())
-        // {
-        // routeNumber = Long.parseLong(scheduledTripRouteNumber);
-        // }
-        // } catch (NumberFormatException e) {
-
-        // // If parsing fails, return empty list
-        // return Collections.emptyList();
-        // }
-        Specification<ScheduledTrip> spec = Specification.allOf(
-                ScheduledTripSpecification.hasRouteNumber(scheduledTripRouteNumber),
+    public List<ScheduledTripResponse> searchScheduledTrips(String routeNumber, Direction direction) {
+        Specification<ScheduledTrip> specification = Specification.allOf(
+                ScheduledTripSpecification.hasRouteNumber(routeNumber),
                 ScheduledTripSpecification.hasDirection(direction));
-
-        return scheduledTripRepository.findAll(spec);
+        return scheduledTripRepository.findAll(specification).stream().map(scheduledTripMapper::toResponse).toList();
     }
 
+    private ScheduledTrip findTrip(Long id) {
+        return scheduledTripRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Scheduled trip not found with id: " + id));
+    }
+
+    private Route findRoute(Long id) {
+        return routeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with id: " + id));
+    }
+
+    private void validateTimes(ScheduledTripRequest request) {
+        if (!request.expectedEndTime().isAfter(request.expectedStartTime())) {
+            throw new BadRequestException("expectedEndTime must be after expectedStartTime.");
+        }
+    }
 }

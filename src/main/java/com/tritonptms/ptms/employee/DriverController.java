@@ -1,12 +1,18 @@
 package com.tritonptms.ptms.employee;
 
-import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
-
+import com.tritonptms.ptms.employee.dto.DriverRequest;
+import com.tritonptms.ptms.employee.dto.DriverResponse;
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -21,41 +27,33 @@ public class DriverController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Driver>> getAllDrivers() {
-        List<Driver> drivers = driverService.getAllDrivers();
-        return new ResponseEntity<>(drivers, HttpStatus.OK);
+    public List<DriverResponse> getAllDrivers() {
+        return driverService.getAllDrivers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Driver> getDriverById(@PathVariable Long id) {
-        Driver driver = driverService.getDriverById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + id));
-        return new ResponseEntity<>(driver, HttpStatus.OK);
+    public DriverResponse getDriverById(@PathVariable Long id) {
+        return driverService.getDriverById(id);
     }
 
     @GetMapping("/nic/{nicNumber}")
-    public ResponseEntity<Driver> getDriverByNic(@PathVariable String nicNumber) {
-        Driver driver = driverService.getDriverByNic(nicNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with NIC number: " + nicNumber));
-        return new ResponseEntity<>(driver, HttpStatus.OK);
+    public DriverResponse getDriverByNic(@PathVariable String nicNumber) {
+        return driverService.getDriverByNic(nicNumber);
     }
 
     @PostMapping
-    public ResponseEntity<Driver> createDriver(@Valid @RequestBody Driver driver) {
-        Driver newDriver = driverService.createDriver(driver);
-        return new ResponseEntity<>(newDriver, HttpStatus.CREATED);
+    public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody DriverRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(driverService.createDriver(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Driver> updateDriver(@PathVariable Long id, @Valid @RequestBody Driver driverDetails) {
-        Driver updatedDriver = driverService.updateDriver(id, driverDetails);
-        return new ResponseEntity<>(updatedDriver, HttpStatus.OK);
+    public DriverResponse updateDriver(@PathVariable Long id, @Valid @RequestBody DriverRequest request) {
+        return driverService.updateDriver(id, request);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDriver(@PathVariable Long id) {
         driverService.deleteDriver(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
-
 }

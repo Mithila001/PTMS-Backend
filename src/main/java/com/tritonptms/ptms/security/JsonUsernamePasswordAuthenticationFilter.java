@@ -1,36 +1,49 @@
 package com.tritonptms.ptms.security;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.security.authentication.AuthenticationServiceException;
+import com.tritonptms.ptms.auth.dto.LoginRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 import java.io.IOException;
-import java.util.Map;
 
 public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-    private final ObjectMapper mapper = new ObjectMapper();
+
+    private final ObjectMapper objectMapper;
+
+    public JsonUsernamePasswordAuthenticationFilter(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+        setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/auth/login", "POST"));
+    }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
-        if (request.getContentType() == null || !request.getContentType().toLowerCase().contains("application/json")) {
-            return super.attemptAuthentication(request, response);
+        String contentType = request.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith(MediaType.APPLICATION_JSON_VALUE)) {
+            throw new InvalidLoginRequestAuthenticationException("Login requires application/json.");
         }
+
         try {
-            Map<String, String> creds = mapper.readValue(request.getInputStream(), new TypeReference<>() {
-            });
-            String username = creds.getOrDefault("username", "");
-            String password = creds.getOrDefault("password", "");
-            UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, password);
+            LoginRequest requestBody = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
+            if (requestBody.username() == null || requestBody.username().isBlank()
+                    || requestBody.password() == null || requestBody.password().isBlank()) {
+                throw new BadCredentialsException("Username and password are required");
+            }
+
+            UsernamePasswordAuthenticationToken token = UsernamePasswordAuthenticationToken.unauthenticated(
+                    requestBody.username().trim(), requestBody.password());
             setDetails(request, token);
-            return this.getAuthenticationManager().authenticate(token);
-        } catch (IOException e) {
-            throw new AuthenticationServiceException("Failed to parse authentication request body", e);
+            return getAuthenticationManager().authenticate(token);
+        } catch (IOException ex) {
+            throw new InvalidLoginRequestAuthenticationException("The login request body is not valid JSON.", ex);
         }
     }
 }

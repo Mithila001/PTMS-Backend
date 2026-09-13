@@ -1,30 +1,30 @@
-
 package com.tritonptms.ptms.assignment;
 
-import com.tritonptms.ptms.assignment.dto.AssignmentDto;
+import com.tritonptms.ptms.assignment.dto.AssignmentRequest;
+import com.tritonptms.ptms.assignment.dto.AssignmentResponse;
 import com.tritonptms.ptms.bus.Bus;
-import com.tritonptms.ptms.employee.Conductor;
-import com.tritonptms.ptms.employee.Driver;
-import com.tritonptms.ptms.schedule.ScheduledTrip;
 import com.tritonptms.ptms.bus.BusRepository;
-import com.tritonptms.ptms.employee.ConductorRepository;
-import com.tritonptms.ptms.employee.DriverRepository;
-import com.tritonptms.ptms.schedule.ScheduledTripRepository;
+import com.tritonptms.ptms.common.exception.BadRequestException;
 import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
-
+import com.tritonptms.ptms.employee.Conductor;
+import com.tritonptms.ptms.employee.ConductorRepository;
+import com.tritonptms.ptms.employee.Driver;
+import com.tritonptms.ptms.employee.DriverRepository;
+import com.tritonptms.ptms.schedule.ScheduledTrip;
+import com.tritonptms.ptms.schedule.ScheduledTripRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@PreAuthorize("hasAnyRole('ADMIN','OPERATIONS_MANAGER')")
 public class AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
@@ -32,133 +32,62 @@ public class AssignmentService {
     private final BusRepository busRepository;
     private final DriverRepository driverRepository;
     private final ConductorRepository conductorRepository;
+    private final AssignmentMapper assignmentMapper;
 
     public AssignmentService(AssignmentRepository assignmentRepository,
             ScheduledTripRepository scheduledTripRepository,
             BusRepository busRepository,
             DriverRepository driverRepository,
-            ConductorRepository conductorRepository) {
+            ConductorRepository conductorRepository,
+            AssignmentMapper assignmentMapper) {
         this.assignmentRepository = assignmentRepository;
         this.scheduledTripRepository = scheduledTripRepository;
         this.busRepository = busRepository;
         this.driverRepository = driverRepository;
         this.conductorRepository = conductorRepository;
+        this.assignmentMapper = assignmentMapper;
     }
-    public List<AssignmentDto> getAllAssignments() {
-        return assignmentRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+
+    public List<AssignmentResponse> getAllAssignments() {
+        return assignmentRepository.findAll().stream().map(assignmentMapper::toResponse).toList();
     }
-    public Optional<AssignmentDto> getAssignmentById(Long id) {
-        return assignmentRepository.findById(id)
-                .map(this::convertToDto);
+
+    public AssignmentResponse getAssignmentById(Long id) {
+        return assignmentMapper.toResponse(findAssignment(id));
     }
+
     @Transactional
-    public Assignment saveAssignment(AssignmentDto assignmentDto) {
-        Assignment assignment;
-        if (assignmentDto.getId() != null) {
-            assignment = assignmentRepository.findById(assignmentDto.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Assignment not found with id: " + assignmentDto.getId()));
-            updateEntityFromDto(assignment, assignmentDto);
-        } else {
-            assignment = convertToEntity(assignmentDto);
-        }
-        return assignmentRepository.save(assignment);
+    public AssignmentResponse createAssignment(AssignmentRequest request) {
+        validateTimes(request);
+        Assignment assignment = assignmentMapper.fromRequest(request);
+        applyReferences(assignment, request);
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
     }
+
+    @Transactional
+    public AssignmentResponse updateAssignment(Long id, AssignmentRequest request) {
+        validateTimes(request);
+        Assignment assignment = findAssignment(id);
+        assignmentMapper.apply(assignment, request);
+        applyReferences(assignment, request);
+        return assignmentMapper.toResponse(assignmentRepository.save(assignment));
+    }
+
     @Transactional
     public void deleteAssignment(Long id) {
-        assignmentRepository.deleteById(id);
-    }
-    public AssignmentDto convertToDto(Assignment assignment) {
-        AssignmentDto dto = new AssignmentDto();
-        dto.setId(assignment.getId());
-        dto.setDate(assignment.getDate());
-        dto.setActualStartTime(assignment.getActualStartTime());
-        dto.setActualEndTime(assignment.getActualEndTime());
-        dto.setStatus(assignment.getStatus());
-        dto.setScheduledTripId(assignment.getScheduledTrip().getId());
-        dto.setBusId(assignment.getBus().getId());
-        dto.setBusRegistrationNumber(assignment.getBus().getRegistrationNumber());
-        dto.setDriverId(assignment.getDriver().getId());
-        dto.setDriverName(assignment.getDriver().getFirstName() + " " + assignment.getDriver().getLastName());
-        dto.setConductorId(assignment.getConductor().getId());
-        dto.setConductorName(
-                assignment.getConductor().getFirstName() + " " + assignment.getConductor().getLastName());
-
-        return dto;
-    }
-    public Assignment convertToEntity(AssignmentDto assignmentDto) {
-        Assignment entity = new Assignment();
-        if (assignmentDto.getId() != null) {
-            entity.setId(assignmentDto.getId());
-        }
-
-        // This is where we use the IDs to find the entities.
-        ScheduledTrip scheduledTrip = scheduledTripRepository.findById(assignmentDto.getScheduledTripId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "ScheduledTrip not found with id: " + assignmentDto.getScheduledTripId()));
-
-        Bus bus = busRepository.findById(assignmentDto.getBusId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Bus not found with id: " + assignmentDto.getBusId()));
-
-        Driver driver = driverRepository.findById(assignmentDto.getDriverId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Driver not found with id: " + assignmentDto.getDriverId()));
-
-        Conductor conductor = conductorRepository.findById(assignmentDto.getConductorId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Conductor not found with id: " + assignmentDto.getConductorId()));
-
-        entity.setScheduledTrip(scheduledTrip);
-        entity.setBus(bus);
-        entity.setDriver(driver);
-        entity.setConductor(conductor);
-        entity.setDate(assignmentDto.getDate());
-        entity.setActualStartTime(assignmentDto.getActualStartTime());
-        entity.setActualEndTime(assignmentDto.getActualEndTime());
-        entity.setStatus(assignmentDto.getStatus());
-
-        return entity;
+        assignmentRepository.delete(findAssignment(id));
     }
 
-    private void updateEntityFromDto(Assignment entity, AssignmentDto dto) {
-        // Fetch related entities using their IDs only if they are being updated
-        if (dto.getScheduledTripId() != null) {
-            ScheduledTrip scheduledTrip = scheduledTripRepository.findById(dto.getScheduledTripId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "ScheduledTrip not found with id: " + dto.getScheduledTripId()));
-            entity.setScheduledTrip(scheduledTrip);
-        }
-
-        if (dto.getBusId() != null) {
-            Bus bus = busRepository.findById(dto.getBusId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Bus not found with id: " + dto.getBusId()));
-            entity.setBus(bus);
-        }
-
-        if (dto.getDriverId() != null) {
-            Driver driver = driverRepository.findById(dto.getDriverId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + dto.getDriverId()));
-            entity.setDriver(driver);
-        }
-
-        if (dto.getConductorId() != null) {
-            Conductor conductor = conductorRepository.findById(dto.getConductorId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Conductor not found with id: " + dto.getConductorId()));
-            entity.setConductor(conductor);
-        }
-
-        entity.setDate(dto.getDate());
-        entity.setActualStartTime(dto.getActualStartTime());
-        entity.setActualEndTime(dto.getActualEndTime());
-        entity.setStatus(dto.getStatus());
-    }
-    public Page<AssignmentDto> searchAssignments(Long scheduledTripId, Long busId, Long driverId, Long conductorId,
-            LocalDate date, AssignmentStatus status, String driverName, String conductorName, Pageable pageable) {
-        Specification<Assignment> combinedSpec = Specification.allOf(
+    public Page<AssignmentResponse> searchAssignments(Long scheduledTripId,
+            Long busId,
+            Long driverId,
+            Long conductorId,
+            LocalDate date,
+            AssignmentStatus status,
+            String driverName,
+            String conductorName,
+            Pageable pageable) {
+        Specification<Assignment> specification = Specification.allOf(
                 AssignmentSpecification.hasScheduledTripId(scheduledTripId),
                 AssignmentSpecification.hasBusId(busId),
                 AssignmentSpecification.hasDriverId(driverId),
@@ -167,9 +96,36 @@ public class AssignmentService {
                 AssignmentSpecification.hasStatus(status),
                 AssignmentSpecification.driverNameContains(driverName),
                 AssignmentSpecification.conductorNameContains(conductorName));
-
-        Page<Assignment> assignmentPage = assignmentRepository.findAll(combinedSpec, pageable);
-        return assignmentPage.map(this::convertToDto);
+        return assignmentRepository.findAll(specification, pageable).map(assignmentMapper::toResponse);
     }
 
+    private Assignment findAssignment(Long id) {
+        return assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found with id: " + id));
+    }
+
+    private void applyReferences(Assignment assignment, AssignmentRequest request) {
+        ScheduledTrip trip = scheduledTripRepository.findById(request.scheduledTripId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Scheduled trip not found with id: " + request.scheduledTripId()));
+        Bus bus = busRepository.findById(request.busId())
+                .orElseThrow(() -> new ResourceNotFoundException("Bus not found with id: " + request.busId()));
+        Driver driver = driverRepository.findById(request.driverId())
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + request.driverId()));
+        Conductor conductor = conductorRepository.findById(request.conductorId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Conductor not found with id: " + request.conductorId()));
+
+        assignment.setScheduledTrip(trip);
+        assignment.setBus(bus);
+        assignment.setDriver(driver);
+        assignment.setConductor(conductor);
+    }
+
+    private void validateTimes(AssignmentRequest request) {
+        if (request.actualStartTime() != null && request.actualEndTime() != null
+                && request.actualEndTime().isBefore(request.actualStartTime())) {
+            throw new BadRequestException("actualEndTime cannot be before actualStartTime.");
+        }
+    }
 }

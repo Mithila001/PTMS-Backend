@@ -1,12 +1,18 @@
 package com.tritonptms.ptms.employee;
 
-import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
-
+import com.tritonptms.ptms.employee.dto.ConductorRequest;
+import com.tritonptms.ptms.employee.dto.ConductorResponse;
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -21,40 +27,33 @@ public class ConductorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Conductor>> getAllConductors() {
-        List<Conductor> conductors = conductorService.getAllConductors();
-        return new ResponseEntity<>(conductors, HttpStatus.OK);
+    public List<ConductorResponse> getAllConductors() {
+        return conductorService.getAllConductors();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Conductor> getConductorById(@PathVariable Long id) {
-        Conductor conductor = conductorService.getConductorById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Conductor not found with id: " + id));
-        return new ResponseEntity<>(conductor, HttpStatus.OK);
+    public ConductorResponse getConductorById(@PathVariable Long id) {
+        return conductorService.getConductorById(id);
     }
 
     @GetMapping("/nic/{nicNumber}")
-    public ResponseEntity<Conductor> getConductorByNic(@PathVariable String nicNumber) {
-        Conductor conductor = conductorService.getConductorByNic(nicNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Conductor not found with NIC number: " + nicNumber));
-        return new ResponseEntity<>(conductor, HttpStatus.OK);
+    public ConductorResponse getConductorByNic(@PathVariable String nicNumber) {
+        return conductorService.getConductorByNic(nicNumber);
     }
 
     @PostMapping
-    public ResponseEntity<Conductor> createConductor(@Valid @RequestBody Conductor conductor) {
-        Conductor newConductor = conductorService.createConductor(conductor);
-        return new ResponseEntity<>(newConductor, HttpStatus.CREATED);
+    public ResponseEntity<ConductorResponse> createConductor(@Valid @RequestBody ConductorRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(conductorService.createConductor(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Conductor> updateConductor(@PathVariable Long id, @Valid @RequestBody Conductor conductorDetails) {
-        Conductor updatedConductor = conductorService.updateConductor(id, conductorDetails);
-        return new ResponseEntity<>(updatedConductor, HttpStatus.OK);
+    public ConductorResponse updateConductor(@PathVariable Long id, @Valid @RequestBody ConductorRequest request) {
+        return conductorService.updateConductor(id, request);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteConductor(@PathVariable Long id) {
         conductorService.deleteConductor(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 }

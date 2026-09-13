@@ -451,3 +451,7 @@ This project is licensed under the MIT License.
 - **v1.0.0** - Initial release with core functionalitys
 
 ---
+
+## Modernization status
+
+Phase 2 application/API modernization is implemented. See [`PHASE_2_HANDOFF.md`](PHASE_2_HANDOFF.md) for the current API/security behavior, local verification commands, and the explicit Phase 3 boundary.

@@ -1,15 +1,22 @@
 package com.tritonptms.ptms.route;
 
-import com.tritonptms.ptms.route.dto.RouteDto;
-import com.tritonptms.ptms.common.web.BaseResponse;
-import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
+import com.tritonptms.ptms.route.dto.RouteRequest;
+import com.tritonptms.ptms.route.dto.RouteResponse;
 import jakarta.validation.Valid;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 @RestController
@@ -18,67 +25,47 @@ public class RouteController {
 
     private final RouteService routeService;
 
-    // Use constructor injection
     public RouteController(RouteService routeService) {
         this.routeService = routeService;
     }
 
     @GetMapping
-    public ResponseEntity<List<RouteDto>> getAllRoutes() {
-        List<RouteDto> routes = routeService.getAllRoutes();
-        return new ResponseEntity<>(routes, HttpStatus.OK);
+    public List<RouteResponse> getAllRoutes() {
+        return routeService.getAllRoutes();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RouteDto> getRouteById(@PathVariable Long id) {
-        RouteDto routeDto = routeService.getRouteById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Route not found with id: " + id));
-        return new ResponseEntity<>(routeDto, HttpStatus.OK);
+    public RouteResponse getRouteById(@PathVariable Long id) {
+        return routeService.getRouteById(id);
     }
 
     @GetMapping("/number/{routeNumber}")
-    public ResponseEntity<RouteDto> getRouteByNumber(@PathVariable String routeNumber) {
-        RouteDto routeDto = routeService.getRouteByNumber(routeNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Route not found with number: " + routeNumber));
-        return new ResponseEntity<>(routeDto, HttpStatus.OK);
+    public RouteResponse getRouteByNumber(@PathVariable String routeNumber) {
+        return routeService.getRouteByNumber(routeNumber);
     }
 
     @PostMapping
-    public ResponseEntity<RouteDto> createRoute(@Valid @RequestBody RouteDto routeDto) {
-        Route newRoute = routeService.createRoute(routeDto);
-        RouteDto newRouteDto = new RouteDto();
-        newRouteDto.setRouteNumber(newRoute.getRouteNumber());
-        newRouteDto.setOrigin(newRoute.getOrigin());
-        newRouteDto.setDestination(newRoute.getDestination());
-        newRouteDto.setMajorStops(newRoute.getMajorStops());
-        return new ResponseEntity<>(newRouteDto, HttpStatus.CREATED);
+    public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RouteDto> updateRoute(@PathVariable Long id, @Valid @RequestBody RouteDto routeDto) {
-        Route updatedRoute = routeService.updateRoute(id, routeDto);
-        RouteDto updatedRouteDto = new RouteDto();
-        updatedRouteDto.setRouteNumber(updatedRoute.getRouteNumber());
-        updatedRouteDto.setOrigin(updatedRoute.getOrigin());
-        updatedRouteDto.setDestination(updatedRoute.getDestination());
-        updatedRouteDto.setMajorStops(updatedRoute.getMajorStops());
-        return new ResponseEntity<>(updatedRouteDto, HttpStatus.OK);
+    public RouteResponse updateRoute(@PathVariable Long id, @Valid @RequestBody RouteRequest request) {
+        return routeService.updateRoute(id, request);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoute(@PathVariable Long id) {
         routeService.deleteRoute(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public ResponseEntity<BaseResponse<Page<RouteDto>>> searchRoutes(
+    public Page<RouteResponse> searchRoutes(
             @RequestParam(required = false) String routeNumber,
             @RequestParam(required = false) String origin,
             @RequestParam(required = false) String destination,
             Pageable pageable) {
-
-        Page<RouteDto> routePage = routeService.searchRoutes(routeNumber, origin, destination, pageable);
-        return new ResponseEntity<>(BaseResponse.success(routePage, "Routes retrieved successfully."), HttpStatus.OK);
+        return routeService.searchRoutes(routeNumber, origin, destination, pageable);
     }
 }

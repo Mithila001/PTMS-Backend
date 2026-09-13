@@ -1,19 +1,24 @@
 package com.tritonptms.ptms.bus;
 
-import com.tritonptms.ptms.bus.dto.BusDto;
 import com.tritonptms.ptms.bus.Bus.ServiceType;
-import com.tritonptms.ptms.common.web.BaseResponse;
+import com.tritonptms.ptms.bus.dto.BusRequest;
+import com.tritonptms.ptms.bus.dto.BusResponse;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/buses")
@@ -21,55 +26,41 @@ public class BusController {
 
     private final BusService busService;
 
-    // Use constructor injection to get an instance of the BusService
     public BusController(BusService busService) {
         this.busService = busService;
     }
 
-    // GET /api/buses: Retrieves a list of all buses
     @GetMapping
-    public ResponseEntity<List<Bus>> getAllBuses() {
-        List<Bus> buses = busService.getAllBuses();
-        return new ResponseEntity<>(buses, HttpStatus.OK);
+    public List<BusResponse> getAllBuses() {
+        return busService.getAllBuses();
     }
 
-    // GET /api/buses/{id}: Retrieves a single bus by its ID
     @GetMapping("/{id}")
-    public ResponseEntity<Bus> getBusById(@PathVariable Long id) {
-        Optional<Bus> bus = busService.getBusById(id);
-        return bus.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public BusResponse getBusById(@PathVariable Long id) {
+        return busService.getBusById(id);
     }
 
-    // POST /api/buses: Creates a new bus
     @PostMapping
-    public ResponseEntity<Bus> createBus(@Valid @RequestBody Bus bus) {
-        Bus newBus = busService.saveBus(bus);
-        return new ResponseEntity<>(newBus, HttpStatus.CREATED);
+    public ResponseEntity<BusResponse> createBus(@Valid @RequestBody BusRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(busService.createBus(request));
     }
 
-    // PUT /api/buses/{id}: Updates an existing bus
     @PutMapping("/{id}")
-    public ResponseEntity<Bus> updateBus(@PathVariable Long id, @Valid @RequestBody Bus busDetails) {
-        Bus updatedBus = busService.updateBus(id, busDetails);
-        return new ResponseEntity<>(updatedBus, HttpStatus.OK);
+    public BusResponse updateBus(@PathVariable Long id, @Valid @RequestBody BusRequest request) {
+        return busService.updateBus(id, request);
     }
 
-    // DELETE /api/buses/{id}: Deletes a bus
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBus(@PathVariable Long id) {
         busService.deleteBus(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public ResponseEntity<BaseResponse<Page<BusDto>>> searchBuses(
+    public Page<BusResponse> searchBuses(
             @RequestParam(required = false) String registrationNumber,
             @RequestParam(required = false) ServiceType serviceType,
             Pageable pageable) {
-
-        Page<BusDto> busPage = busService.searchBuses(registrationNumber, serviceType, pageable);
-        return new ResponseEntity<>(BaseResponse.success(busPage, "Buses retrieved successfully."), HttpStatus.OK);
+        return busService.searchBuses(registrationNumber, serviceType, pageable);
     }
-
 }

@@ -1,63 +1,60 @@
 package com.tritonptms.ptms.employee;
 
 import com.tritonptms.ptms.common.exception.ResourceNotFoundException;
-
+import com.tritonptms.ptms.employee.dto.DriverRequest;
+import com.tritonptms.ptms.employee.dto.DriverResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
+@PreAuthorize("hasAnyRole('ADMIN','OPERATIONS_MANAGER')")
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final DriverMapper driverMapper;
 
-    public DriverService(DriverRepository driverRepository) {
+    public DriverService(DriverRepository driverRepository, DriverMapper driverMapper) {
         this.driverRepository = driverRepository;
+        this.driverMapper = driverMapper;
     }
-    public List<Driver> getAllDrivers() {
-        return driverRepository.findAll();
+
+    public List<DriverResponse> getAllDrivers() {
+        return driverRepository.findAll().stream().map(driverMapper::toResponse).toList();
     }
-    public Optional<Driver> getDriverById(Long id) {
-        return driverRepository.findById(id);
+
+    public DriverResponse getDriverById(Long id) {
+        return driverMapper.toResponse(findDriver(id));
     }
-    public Optional<Driver> getDriverByNic(String nicNumber) {
-        return driverRepository.findByNicNumber(nicNumber);
+
+    public DriverResponse getDriverByNic(String nicNumber) {
+        Driver driver = driverRepository.findByNicNumber(nicNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with NIC: " + nicNumber));
+        return driverMapper.toResponse(driver);
     }
+
     @Transactional
-    public Driver createDriver(Driver driver) {
-        return driverRepository.save(driver);
+    public DriverResponse createDriver(DriverRequest request) {
+        return driverMapper.toResponse(driverRepository.save(driverMapper.fromRequest(request)));
     }
+
     @Transactional
-    public Driver updateDriver(Long id, Driver driverDetails) {
-        Driver existingDriver = driverRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + id));
-
-        // Update the common employee fields
-        existingDriver.setFirstName(driverDetails.getFirstName());
-        existingDriver.setLastName(driverDetails.getLastName());
-        existingDriver.setDateOfBirth(driverDetails.getDateOfBirth());
-        existingDriver.setContactNumber(driverDetails.getContactNumber());
-        existingDriver.setEmail(driverDetails.getEmail());
-        existingDriver.setAddress(driverDetails.getAddress());
-        existingDriver.setDateJoined(driverDetails.getDateJoined());
-        existingDriver.setIsCurrentEmployee(driverDetails.getIsCurrentEmployee());
-
-        // Update the driver-specific fields
-        existingDriver.setDrivingLicenseNumber(driverDetails.getDrivingLicenseNumber());
-        existingDriver.setLicenseExpirationDate(driverDetails.getLicenseExpirationDate());
-        existingDriver.setLicenseClass(driverDetails.getLicenseClass());
-        existingDriver.setNtcLicenseNumber(driverDetails.getNtcLicenseNumber());
-        existingDriver.setNtcLicenseExpirationDate(driverDetails.getNtcLicenseExpirationDate());
-        existingDriver.setAvailable(driverDetails.isAvailable());
-
-        return driverRepository.save(existingDriver);
+    public DriverResponse updateDriver(Long id, DriverRequest request) {
+        Driver driver = findDriver(id);
+        driverMapper.apply(driver, request);
+        return driverMapper.toResponse(driverRepository.save(driver));
     }
+
     @Transactional
     public void deleteDriver(Long id) {
-        driverRepository.deleteById(id);
+        driverRepository.delete(findDriver(id));
     }
 
+    private Driver findDriver(Long id) {
+        return driverRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + id));
+    }
 }

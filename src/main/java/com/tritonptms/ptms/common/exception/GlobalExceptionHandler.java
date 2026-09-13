@@ -1,118 +1,130 @@
 package com.tritonptms.ptms.common.exception;
 
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
-import com.tritonptms.ptms.common.web.BaseResponse;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import java.util.HashMap;
+import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    // Automatically thrown by Spring when an incoming request body fails
-    // validation.
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+    protected org.springframework.http.ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
             HttpHeaders headers,
             HttpStatusCode status,
             WebRequest request) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.putIfAbsent(error.getField(), message(error)));
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        BaseResponse<Object> errorResponse = new BaseResponse<>(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation failed",
-                null,
-                errors);
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "validation-error", "Validation failed",
+                "One or more fields are invalid.");
+        problem.setProperty("errors", errors);
+        return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
     }
 
-    // Custom exception
+    @Override
+    protected org.springframework.http.ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "malformed-request", "Malformed request",
+                "The request body could not be read. Check the JSON structure and field values.");
+        return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @Override
+    protected org.springframework.http.ResponseEntity<Object> handleHttpMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        ProblemDetail problem = problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "unsupported-media-type",
+                "Unsupported media type", "Use a supported Content-Type for this endpoint.");
+        return handleExceptionInternal(ex, problem, headers, HttpStatus.UNSUPPORTED_MEDIA_TYPE, request);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<BaseResponse<String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        BaseResponse<String> errorResponse = new BaseResponse<>(
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
-                null,
-                null);
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, "resource-not-found", "Resource not found", ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ProblemDetail handleBadRequest(BadRequestException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "bad-request", "Bad request", ex.getMessage());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ProblemDetail handleConflict(ConflictException ex) {
+        return problem(HttpStatus.CONFLICT, "conflict", "Conflict", ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<BaseResponse<String>> handleDataIntegrityViolationException(
-            DataIntegrityViolationException ex) {
-        String userFriendlyMessage = "This resource cannot be deleted as it is linked to other records.";
-
-        // Try to get the root cause of the exception
-        Throwable mostSpecificCause = ex.getMostSpecificCause();
-        if (mostSpecificCause != null) {
-            String errorMessage = mostSpecificCause.getMessage();
-
-            // Regex for PostgreSQL foreign key violation
-            Pattern pgPattern = Pattern.compile("Key \\(([^)]+)\\) is still referenced from table \"(\\w+)\"\\.");
-            Matcher pgMatcher = pgPattern.matcher(errorMessage);
-
-            if (pgMatcher.find()) {
-                String childTable = pgMatcher.group(2);
-                String childTableName = childTable.substring(0, 1).toUpperCase() + childTable.substring(1);
-                userFriendlyMessage = String.format(
-                        "Cannot delete this record because it is referenced by data in the '%s' table.",
-                        childTableName);
-            } else {
-                // Generic regex for a "violates foreign key constraint" message
-                Pattern genericPattern = Pattern
-                        .compile("violates foreign key constraint \"(\\w+)\" on table \"(\\w+)\"");
-                Matcher genericMatcher = genericPattern.matcher(errorMessage);
-
-                if (genericMatcher.find()) {
-                    String childTable = genericMatcher.group(2);
-                    String childTableName = childTable.substring(0, 1).toUpperCase() + childTable.substring(1);
-                    userFriendlyMessage = String.format(
-                            "Cannot delete this record because it is referenced by data in the '%s' table.",
-                            childTableName);
-                }
-            }
-        }
-
-        BaseResponse<String> errorResponse = new BaseResponse<>(
-                HttpStatus.CONFLICT.value(),
-                userFriendlyMessage,
-                null,
-                null);
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return problem(HttpStatus.CONFLICT, "data-conflict", "Data conflict",
+                "The operation conflicts with existing or related data.");
     }
 
-    // Fallback for any other exceptions
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<BaseResponse<String>> handleRuntimeException(RuntimeException ex) {
-        BaseResponse<String> errorResponse = new BaseResponse<>(
-                HttpStatus.BAD_REQUEST.value(),
-                "Invalid request: " + ex.getMessage(),
-                null,
-                null);
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-parameter", "Invalid parameter",
+                "Parameter '" + ex.getName() + "' has an invalid value.");
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation ->
+                errors.put(violation.getPropertyPath().toString(), violation.getMessage()));
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "validation-error", "Validation failed",
+                "One or more request values are invalid.");
+        problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        return problem(HttpStatus.FORBIDDEN, "forbidden", "Forbidden",
+                "You do not have permission to perform this operation.");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnexpected(Exception ex) {
+        log.error("Unexpected API error", ex);
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "internal-error", "Internal server error",
+                "An unexpected error occurred.");
+    }
+
+    private ProblemDetail problem(HttpStatus status, String type, String title, String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setType(URI.create("urn:problem:" + type));
+        return problem;
+    }
+
+    private String message(FieldError error) {
+        return error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage();
+    }
 }

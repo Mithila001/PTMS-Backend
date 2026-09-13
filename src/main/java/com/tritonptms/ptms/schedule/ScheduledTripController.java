@@ -1,13 +1,21 @@
 package com.tritonptms.ptms.schedule;
 
-import com.tritonptms.ptms.schedule.dto.ScheduledTripDto;
+import com.tritonptms.ptms.schedule.dto.ScheduledTripRequest;
+import com.tritonptms.ptms.schedule.dto.ScheduledTripResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/scheduled-trips")
@@ -20,50 +28,37 @@ public class ScheduledTripController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ScheduledTripDto>> getAllScheduledTrips() {
-        List<ScheduledTripDto> scheduledTrips = scheduledTripService.getAllScheduledTrips();
-        return new ResponseEntity<>(scheduledTrips, HttpStatus.OK);
+    public List<ScheduledTripResponse> getAllScheduledTrips() {
+        return scheduledTripService.getAllScheduledTrips();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ScheduledTripDto> getScheduledTripById(@PathVariable Long id) {
-        Optional<ScheduledTripDto> scheduledTrip = scheduledTripService.getScheduledTripById(id);
-        return scheduledTrip.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ScheduledTripResponse getScheduledTripById(@PathVariable Long id) {
+        return scheduledTripService.getScheduledTripById(id);
     }
 
     @PostMapping
-    public ResponseEntity<ScheduledTripDto> createScheduledTrip(@Valid @RequestBody ScheduledTripDto scheduledTripDto) {
-        ScheduledTrip newScheduledTrip = scheduledTripService.saveScheduledTrip(scheduledTripDto);
-        ScheduledTripDto newScheduledTripDto = scheduledTripService.convertToDto(newScheduledTrip);
-        return new ResponseEntity<>(newScheduledTripDto, HttpStatus.CREATED);
+    public ResponseEntity<ScheduledTripResponse> createScheduledTrip(
+            @Valid @RequestBody ScheduledTripRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(scheduledTripService.createScheduledTrip(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ScheduledTripDto> updateScheduledTrip(@PathVariable Long id,
-            @Valid @RequestBody ScheduledTripDto scheduledTripDetailsDto) {
-        scheduledTripDetailsDto.setId(id);
-        ScheduledTrip updatedScheduledTrip = scheduledTripService.saveScheduledTrip(scheduledTripDetailsDto);
-        ScheduledTripDto updatedScheduledTripDto = scheduledTripService.convertToDto(updatedScheduledTrip);
-        return new ResponseEntity<>(updatedScheduledTripDto, HttpStatus.OK);
+    public ScheduledTripResponse updateScheduledTrip(@PathVariable Long id,
+            @Valid @RequestBody ScheduledTripRequest request) {
+        return scheduledTripService.updateScheduledTrip(id, request);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScheduledTrip(@PathVariable Long id) {
         scheduledTripService.deleteScheduledTrip(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/search-trips")
-    public ResponseEntity<List<ScheduledTripDto>> searchScheduledTrips(
-            @RequestParam(required = false) String scheduledTripRouteNumber,
+    @GetMapping("/search")
+    public List<ScheduledTripResponse> searchScheduledTrips(
+            @RequestParam(required = false) String routeNumber,
             @RequestParam(required = false) Direction direction) {
-
-        List<ScheduledTrip> scheduledTrips = scheduledTripService.searchScheduledTrips(scheduledTripRouteNumber,
-                direction);
-        List<ScheduledTripDto> scheduledTripDtos = scheduledTrips.stream()
-                .map(scheduledTripService::convertToDto)
-                .collect(Collectors.toList());
-        return new ResponseEntity<>(scheduledTripDtos, HttpStatus.OK);
+        return scheduledTripService.searchScheduledTrips(routeNumber, direction);
     }
 }

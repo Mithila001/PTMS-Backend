@@ -1,15 +1,17 @@
 package com.tritonptms.ptms.audit;
 
 import com.tritonptms.ptms.audit.dto.AuditLogDto;
-import com.tritonptms.ptms.user.User;
+import com.tritonptms.ptms.audit.dto.ActionLogResponse;
+import com.tritonptms.ptms.security.AuthenticatedUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 
 @Service
 public class ActionLogService {
@@ -17,6 +19,22 @@ public class ActionLogService {
     private final ActionLogRepository actionLogRepository;
     public ActionLogService(ActionLogRepository actionLogRepository) {
         this.actionLogRepository = actionLogRepository;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<ActionLogResponse> getAllActionLogs() {
+        return actionLogRepository.findAll(Sort.by(Sort.Direction.DESC, "timestamp")).stream()
+                .map(log -> new ActionLogResponse(
+                        log.getId(),
+                        log.getUserId(),
+                        log.getEntityType(),
+                        log.getEntityId(),
+                        log.getRevisionType(),
+                        log.getSummary(),
+                        log.getChanges(),
+                        log.getTimestamp()))
+                .toList();
     }
 
     /**
@@ -57,9 +75,8 @@ public class ActionLogService {
      */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof User) {
-            User user = (User) authentication.getPrincipal();
-            return user.getId();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser user) {
+            return user.id();
         }
         return null;
     }

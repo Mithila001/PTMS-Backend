@@ -1,9 +1,8 @@
 package com.tritonptms.ptms.employee;
 
-import com.tritonptms.ptms.employee.dto.EmployeeDto;
+import com.tritonptms.ptms.employee.dto.EmployeeSummaryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,28 +19,22 @@ public class EmployeeController {
     }
 
     @GetMapping("/drivers/search")
-    public ResponseEntity<Page<EmployeeDto>> searchDrivers(
+    public Page<EmployeeSummaryResponse> searchDrivers(
             @RequestParam(required = false) String nicNumber,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String contactNumber,
             @RequestParam(required = false) String licenseNumber,
             Pageable pageable) {
-
-        Page<EmployeeDto> driversPage = employeeService.searchDrivers(
-                nicNumber, name, contactNumber, licenseNumber, pageable);
-        return ResponseEntity.ok(driversPage);
+        return employeeService.searchDrivers(nicNumber, name, contactNumber, licenseNumber, pageable);
     }
 
     @GetMapping("/conductors/search")
-    public ResponseEntity<Page<EmployeeDto>> searchConductors(
+    public Page<EmployeeSummaryResponse> searchConductors(
             @RequestParam(required = false) String nicNumber,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String contactNumber,
             @RequestParam(required = false) String licenseNumber,
             Pageable pageable) {
-
-        Page<EmployeeDto> conductorsPage = employeeService.searchConductors(
-                nicNumber, name, contactNumber, licenseNumber, pageable);
-        return ResponseEntity.ok(conductorsPage);
+        return employeeService.searchConductors(nicNumber, name, contactNumber, licenseNumber, pageable);
     }
 }

@@ -1,57 +1,33 @@
-
 package com.tritonptms.ptms.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tritonptms.ptms.user.User; // <-- Keep this
 import com.tritonptms.ptms.auth.dto.UserInfoResponse;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public CustomAuthenticationSuccessHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+            Authentication authentication) throws IOException {
+        AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
+        UserInfoResponse body = new UserInfoResponse(principal.id(), principal.getUsername(), principal.roles());
 
-        // ensure SecurityContext is available
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // create session and store SecurityContext so JSESSIONID is set and persisted
-        HttpSession session = request.getSession(true);
-        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                SecurityContextHolder.getContext());
-
-        // build response DTO (keep your existing logic)
-        User user = (User) authentication.getPrincipal();
-        List<String> roles = user.getRoles().stream()
-                .map(role -> role.getName())
-                .collect(Collectors.toList());
-        UserInfoResponse userInfo = new UserInfoResponse(user.getId(), user.getUsername(), roles);
-
-        // debug: print session id (remove later)
-        System.out.println("Login success. Session id: " + session.getId());
-
-        response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write(objectMapper.writeValueAsString(userInfo));
-
-        System.out.println(">> Set-Cookie header check: " + response.getHeader("Set-Cookie"));
-
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
-
 }
