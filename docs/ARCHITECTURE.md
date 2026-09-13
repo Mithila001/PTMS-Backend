@@ -2,22 +2,33 @@
 
 ## Style
 
-PTMS is a **feature-oriented layered monolith**. Package-by-feature controls where code lives; normal Controller → Service → Repository layering still controls runtime responsibilities.
+PTMS is a **feature-oriented layered monolith**. The root package separates application capabilities from technical infrastructure and shared foundations, while package-by-feature keeps each business capability together.
+
+```text
+com.tritonptms.ptms/
+├── feature/          # what PTMS does
+├── infrastructure/   # technical mechanisms used by PTMS
+├── common/           # small shared foundations
+└── PtmsApplication.java
+```
 
 A typical feature contains:
 
 ```text
-bus/
+feature/bus/
 ├── Bus.java
 ├── BusController.java
 ├── BusService.java
 ├── BusRepository.java
 ├── BusSpecification.java
 ├── BusMapper.java
+├── audit/
 └── dto/
     ├── BusRequest.java
     └── BusResponse.java
 ```
+
+`feature.bus.audit` exposes Bus-specific revision use cases. Generic Envers/JPA auditing machinery is kept separately in `infrastructure.audit`.
 
 ## Responsibilities
 

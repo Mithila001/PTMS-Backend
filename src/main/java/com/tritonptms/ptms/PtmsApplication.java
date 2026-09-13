@@ -1,6 +1,6 @@
 package com.tritonptms.ptms;
 
-import com.tritonptms.ptms.audit.PtmsEnversRepositoryFactoryBean;
+import com.tritonptms.ptms.infrastructure.audit.PtmsEnversRepositoryFactoryBean;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

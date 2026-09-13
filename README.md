@@ -28,23 +28,35 @@ The code is organized by feature while retaining normal application layers insid
 ```text
 com.tritonptms.ptms/
 ├── PtmsApplication.java
-├── common/
+├── feature/
+│   ├── assignment/
+│   ├── auth/
+│   ├── bus/
+│   │   └── audit/
+│   ├── dashboard/
+│   ├── employee/
+│   ├── reference/
+│   ├── route/
+│   ├── schedule/
+│   └── user/
+├── infrastructure/
 │   ├── audit/
 │   ├── config/
-│   ├── exception/
-│   ├── reference/
-│   └── web/
-├── security/
-├── auth/
-├── user/
-├── bus/
-├── employee/
-├── route/
-├── schedule/
-├── assignment/
-├── dashboard/
-└── audit/
+│   ├── security/
+│   └── seed/
+└── common/
+    ├── exception/
+    ├── persistence/
+    └── web/
 ```
+
+The root packages have intentionally different responsibilities:
+
+- `feature`: user-facing and business capabilities, organized package-by-feature;
+- `infrastructure`: Spring/Hibernate/security/environment mechanisms that support the application;
+- `common`: small reusable foundations shared by multiple features.
+
+Feature packages still retain normal Controller → Service → Repository layering internally. Bus revision endpoints live with the Bus feature, while the Envers revision machinery lives under `infrastructure.audit`.
 
 Typical request flow:
 
