@@ -10,7 +10,7 @@ public class EmployeeSpecification {
 
     public static <T extends Employee> Specification<T> hasNicNumber(String nicNumber) {
         if (!StringUtils.hasText(nicNumber)) {
-            return Specification.where(null);
+            return Specification.unrestricted();
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
                 criteriaBuilder.lower(root.get("nicNumber")),
@@ -19,7 +19,7 @@ public class EmployeeSpecification {
 
     public static <T extends Employee> Specification<T> hasName(String name) {
         if (!StringUtils.hasText(name)) {
-            return Specification.where(null);
+            return Specification.unrestricted();
         }
         return (root, query, criteriaBuilder) -> {
             String lowerCaseName = name.toLowerCase();
@@ -33,7 +33,7 @@ public class EmployeeSpecification {
 
     public static <T extends Employee> Specification<T> hasContactNumber(String contactNumber) {
         if (!StringUtils.hasText(contactNumber)) {
-            return Specification.where(null);
+            return Specification.unrestricted();
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(
                 root.get("contactNumber"),

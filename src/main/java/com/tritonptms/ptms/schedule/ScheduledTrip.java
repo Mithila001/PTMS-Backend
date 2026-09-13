@@ -1,5 +1,6 @@
 package com.tritonptms.ptms.schedule;
 
+import com.tritonptms.ptms.common.audit.AuditableEntity;
 import com.tritonptms.ptms.route.Route;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,7 +23,7 @@ import java.time.LocalTime;
         @Index(name = "idx_scheduled_trips_route", columnList = "route_id"),
         @Index(name = "idx_scheduled_trips_direction", columnList = "direction")
 })
-public class ScheduledTrip {
+public class ScheduledTrip extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

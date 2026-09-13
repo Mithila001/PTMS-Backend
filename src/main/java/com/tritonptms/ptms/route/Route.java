@@ -1,5 +1,6 @@
 package com.tritonptms.ptms.route;
 
+import com.tritonptms.ptms.common.audit.AuditableEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -13,6 +14,8 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.LineString;
 
 import java.util.List;
@@ -22,7 +25,7 @@ import java.util.List;
         @Index(name = "idx_routes_origin", columnList = "origin"),
         @Index(name = "idx_routes_destination", columnList = "destination")
 })
-public class Route {
+public class Route extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +52,7 @@ public class Route {
     @Column(name = "stop_name", nullable = false, length = 150)
     private List<String> majorStops;
 
+    @JdbcTypeCode(SqlTypes.GEOGRAPHY)
     @Column(name = "route_path", columnDefinition = "geography(LineString,4326)")
     private LineString routePath;
 

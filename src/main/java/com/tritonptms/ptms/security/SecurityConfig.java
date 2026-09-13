@@ -116,16 +116,16 @@ public class SecurityConfig {
                         .csrfTokenRequestHandler(csrfRequestHandler))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/login", "/api/auth/csrf", "/api/public/**", "/api/enums/**",
-                                "/actuator/health")
+                        .requestMatchers("/api/auth/login", "/api/auth/csrf", "/api/enums/**", "/actuator/health")
                         .permitAll()
+                        .requestMatchers("/api/buses/*/revisions")
+                        .hasRole("ADMIN")
                         .requestMatchers("/api/buses/**", "/api/routes/**")
                         .hasAnyRole("ADMIN", "OPERATIONS_MANAGER", "USER")
                         .requestMatchers("/api/assignments/**", "/api/scheduled-trips/**", "/api/drivers/**",
-                                "/api/conductors/**", "/api/employees/**", "/api/dashboard/**",
-                                "/api/operations/**", "/api/action-logs/**")
+                                "/api/conductors/**", "/api/employees/**", "/api/dashboard/**")
                         .hasAnyRole("ADMIN", "OPERATIONS_MANAGER")
-                        .requestMatchers("/api/audit/**", "/api/users/**", "/api/logs/**", "/api/admin/**")
+                        .requestMatchers("/api/users/**")
                         .hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(exceptions -> exceptions

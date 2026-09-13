@@ -9,12 +9,10 @@ import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.envers.Audited;
 
 import java.util.Date;
 
 @Entity
-@Audited
 @Table(name = "drivers", indexes = @Index(name = "idx_drivers_available", columnList = "available"))
 public class Driver extends Employee {
 

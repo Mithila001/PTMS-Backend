@@ -1,457 +1,290 @@
-> [!IMPORTANT]
-> **Modernization status: Phase 1 of 3.** The foundation has been reorganized and is not yet the final API/security/auditing/test design. For the current fresh-clone setup, build commands, development database, and known Phase 1 boundaries, see [`PHASE_1_HANDOFF.md`](PHASE_1_HANDOFF.md). The full README refresh is intentionally deferred to Phase 3.
-
-# Public Transport Management System - Backend API
-
-## 📖 Table of Contents
-
-- [Public Transport Management System - Backend API](#public-transport-management-system---backend-api)
-  - [📖 Table of Contents](#-table-of-contents)
-  - [🚌 Overview](#-overview)
-  - [🏗️ Architecture \& Technology Stack](#️-architecture--technology-stack)
-  - [🚀 Core Features \& Professional Practices](#-core-features--professional-practices)
-    - [🛡️ Secure \& Structured API Design](#️-secure--structured-api-design)
-    - [💾 Advanced Data Handling \& Auditing](#-advanced-data-handling--auditing)
-    - [⚙️ Development, Deployment, \& Production Readiness](#️-development-deployment--production-readiness)
-- [Project Setup](#project-setup)
-  - [📋 Prerequisites](#-prerequisites)
-    - [💻 Development Environment](#-development-environment)
-    - [🗃️ Database \& Geospatial Services](#️-database--geospatial-services)
-  - [🛠️ Installation \& Setup (Non-Docker)](#️-installation--setup-non-docker)
-    - [1. Database Setup (PostgreSQL with PostGIS)](#1-database-setup-postgresql-with-postgis)
-    - [2. Backend Application Setup](#2-backend-application-setup)
-    - [3. Post-Setup \& Access](#3-post-setup--access)
-  - [🌐 Main API Endpoints](#-main-api-endpoints)
-  - [🐳 Docker Setup](#-docker-setup)
-    - [Project Structure](#project-structure)
-    - [Setup Instructions](#setup-instructions)
-    - [Configuration Options](#configuration-options)
-    - [Running the Application](#running-the-application)
-    - [Authentication \& User Management](#authentication--user-management)
-    - [Route Management](#route-management)
-    - [Vehicle Management](#vehicle-management)
-    - [Employee Management](#employee-management)
-    - [Assignment \& Trip Management](#assignment--trip-management)
-    - [Utility \& Diagnostics](#utility--diagnostics)
-  - [📁 Project Structure](#-project-structure)
-  - [👥 Default Users (Development Environment)](#-default-users-development-environment)
-  - [📄 License](#-license)
-  - [🔄 Version History](#-version-history)
-
----
-
-A robust Spring Boot 3 RESTful API backend for digitalizing and managing public bus transport operations in Sri Lanka. This system focuses on comprehensive Bus, Route, and Employee assignment management, backed by strong professional practices and advanced data handling.
-
-## 🚌 Overview
-
-The PTMS Backend API is built on **Spring Boot (Java 21)** and provides a complete RESTful interface for core transport management. It features:
-
-- **Advanced Data Handling:** Utilizes **PostgreSQL** with **Hibernate Spatial** for future-proofing geospatial capabilities and **Hibernate Envers** for comprehensive data auditing.
-- **Secure & Role-Based Access:** Integrated **Spring Security** for role-based authentication and secure API access.
-- **Structured Management:** Supports detailed management of **Buses**, **Routes**, **Employees** (Drivers/Conductors), and **Scheduled Assignments**.
-- **Development Ready:** Includes automated data loading and startup diagnostics for a smooth local setup.
-
-> [!NOTE]
-> This API is designed to work with the separate **PTMS Frontend React** application, available in the **[PTMS-FrontEnd Repository](https://github.com/Mithila001/PTMS-frontEnd)**.
-
-## 🏗️ Architecture & Technology Stack
-
-- **Framework**: Spring Boot 3.x
-- **Java Version**: JDK 21
-- **Database**: PostgreSQL with PostGIS extension (leveraging Hibernate Spatial)
-- **Security**: Spring Security (Custom Authentication, Role-Based Access Control)
-- **ORM**: Hibernate with JPA
-- **Auditing**: Hibernate Envers for comprehensive change tracking
-- **Build Tool**: Maven 3.8+
-- **Containerization**: Docker support with multi-stage builds
-- **API Documentation**: RESTful endpoints with comprehensive validation
-
-## 🚀 Core Features & Professional Practices
-
-This system is designed not just for basic transport management functionality, but also to demonstrate adherence to industry-standard development practices, including robust security, data integrity, and maintainability.
-
----
-
-### 🛡️ Secure & Structured API Design
-
-The backend implements a clear, structured architecture with a focus on security and data integrity:
-
-- **RESTful Service Design:** Standardized CRUD operations across all core domain entities (**Routes**, **Buses**, **Employees**, and **Scheduled Assignments**).
-- **API Validation:** Comprehensive input validation using **Jakarta Bean Validation** (e.g., `@NotBlank`, `@Size`), ensuring data integrity at the model layer.
-- **Authentication & Access Control:**
-  - **Session-based Authentication** managed by **Spring Security**, utilizing a custom **JSON Login Filter** for secure username/password handling.
-  - **Role-Based Access Control (RBAC)** enforced for `ADMIN`, `OPERATIONS_MANAGER`, and `USER` roles to secure specific API endpoints.
-  - Secure endpoints for user registration, login, and current user retrieval.
-
----
-
-### 💾 Advanced Data Handling & Auditing
-
-The system utilizes advanced persistence features to ensure data quality, history, and future-proofing:
-
-- **Geospatial Capabilities:** Integration of **PostgreSQL** with the **PostGIS** extension, leveraging **Hibernate Spatial** for managing and querying geographic route data using JTS data types (Confirmed in `Route.java`).
-- **Comprehensive Audit Trail:** Implements **Hibernate Envers** to automatically track and version all changes to critical entities. A dedicated `AuditService` provides a centralized, detailed, and historically attributable audit log with field-level change detection (Confirmed by `AuditService.java`).
-- **Employee Hierarchy:** Models a real-world employee structure, managing both **Drivers** and **Conductors** using an inheritance pattern.
-- **Operational Management:** Enables dynamic **Assignment** of personnel and buses to **Scheduled Trips** for real-time operation tracking.
-
----
-
-### ⚙️ Development, Deployment, & Production Readiness
-
-Practices put in place to ensure the project is easy to set up, deploy, and maintain in production:
-
-- **Containerized Deployment (Docker):** A **multi-stage Dockerfile** is used to create minimal, hardened images, featuring:
-  - Maven build stage for caching and speed.
-  - **Non-root user** execution (`appuser`) for enhanced security.
-  - Optimized **JVM settings** for container environments (`-XX:MaxRAMPercentage=75.0`).
-  - **Spring Boot Actuator** and **curl** used for robust container **HEALTHCHECK**.
-- **Custom Startup Error Check:** Implements **fail-fast diagnostics** to prevent runtime failures:
-  - **Pre-Context Validator (`StartupPropertyValidator`)** checks critical configuration properties (like `DB_URL`) before the Spring context loads.
-  - **Production Diagnostics (`StartupDiagnostics`)** runs a `CommandLineRunner` in the `prod` profile to ensure the database connection is live and valid before accepting traffic.
-- **Automated Data Seeding:** Configurable data loaders (`@Profile("dev")`) are used to automatically generate sample data on startup for rapid local environment setup.
-- **Clear Separation of Concerns:** Adherence to MVC principles with distinct packages for Controllers, Services, Repositories, and DTOs.
-
----
-
----
-
-# Project Setup
-
-You can set up this project using one of two methods:
-
-1.  [Direct local setup](#installation-setup-non-docker)
-2.  [Docker Setup](#installation-setup-docker)
-
-The **Docker setup** is recommended for a quicker build process.
-
-## 📋 Prerequisites
-
-To run and develop the **Public Transport Management System** locally, you will need the following tools and services installed and configured on your machine.
-
----
-
-### 💻 Development Environment
-
-- **Java Development Kit (JDK) 21 or newer:** The project is built using Java 21. Ensure the correct version is installed and set in your environment variables.
-- **Maven 3.6+:** Used for building the project, managing dependencies, and running tests.
-- **Git:** Required for cloning the repository.
-- **An IDE of choice** (e.g., IntelliJ IDEA, VS Code, Eclipse) configured for Spring Boot and Java development.
-
----
-
-### 🗃️ Database & Geospatial Services
-
-The system requires a running PostgreSQL instance with the PostGIS extension enabled to support the geospatial routing features.
-
-- **PostgreSQL 17 :** The database server required for persistence.
-
-> [!WARNING]
-> As of September 2025, the **PostGIS Extension** installation option may not yet be available in the Stack Builder for **PostgreSQL 18**. **PostgreSQL 17** is recommended for now to ensure smooth installation of the PostGIS extension.
-
-- **PostGIS Extension:** Must be installed and enabled on the target database schema (e.g., via `CREATE EXTENSION postgis;`).
-- **Database Credentials:** You will need the following environment variables set for the application to connect:
-  - `DB_URL` (e.g., `jdbc:postgresql://localhost:5432/ptms_db`)
-  - `DB_USERNAME`
-  - `DB_PASSWORD`
-
----
-
-<a id="installation-setup-non-docker"></a>
-
-## 🛠️ Installation & Setup (Non-Docker)
-
-Follow these steps to set up and run the **Public Transport Management System** backend locally without using Docker containers, utilizing the custom PowerShell startup script.
-
-### 1. Database Setup (PostgreSQL with PostGIS)
-
-You must have **PostgreSQL 17+** installed and running before starting the application.
-
-1.  **Install PostgreSQL:** Download and install a recommended version (e.g., PostgreSQL 17) for your operating system.
-2.  **Create Database:** Open the PostgreSQL interactive terminal (psql) or a tool like PgAdmin and create the database specified in the environment file.
-    ```sql
-    CREATE DATABASE bus_transport_db;
-    ```
-3.  **Enable PostGIS:** Connect to the newly created database (`\c bus_transport_db`) and enable the required geospatial extension.
-    ```sql
-    CREATE EXTENSION postgis;
-    ```
-
----
-
-### 2. Backend Application Setup
-
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/Mithila001/PTMS-Backend.git
-    cd public-transport-management-system
-    ```
-2.  **Create Environment File:** Create a file named **`.env.dev`** in the project root based on an `.env.example` template and populate it with your desired credentials.
-
-    | Variable                  | Example Value                                         | Description                                              |
-    | :------------------------ | :---------------------------------------------------- | :------------------------------------------------------- |
-    | `DB_URL`                  | `"jdbc:postgresql://localhost:5432/bus_transport_db"` | Database connection URL.                                 |
-    | `DB_USERNAME`             | `"postgres"`                                          | Database user.                                           |
-    | `DB_PASSWORD`             | `"root"`                                              | Database password.                                       |
-    | `SPRING_PROFILES_ACTIVE`  | `dev`                                                 | Sets the profile to load **application-dev.properties**. |
-    | `DEV_DATA_LOADER_ENABLED` | `false`                                               | Set to `true` to enable sample data seeding on startup.  |
-    | `SERVER_PORT`             | `8080`                                                | Application port.                                        |
-    | `COOKIE_SECURE`           | `false`                                               | Security setting for session cookie.                     |
-    | `CORS_ALLOWED_ORIGINS`    | `"http://localhost:5173,http://localhost:3000"`       | Allowed frontend origins.                                |
-
-> [!TIP]
-> If you prefer running the application directly through an IDE (like the Spring Boot Dashboard) and want to skip using the PowerShell script, you can modify the **fallback credentials** in **`src/main/resources/application-dev.properties`**. Any properties set directly in this file will be used if the corresponding environment variable is not provided.
-
-3. **Run the Application (Recommended):** Use the provided PowerShell script to load environment variables and start the application. This approach ensures all necessary configurations are correctly applied.
-
-   - **Requires:** **PowerShell** on your system.
-   - **Command (Run from the backend project root):**
-     ```bash
-     .\scripts\run-dev.ps1
-     ```
-
-4. **Wait for Startup:** The application startup is successful when the console displays a log message similar to: `tarted PublicTransportManagementSystemApplication in X.XXX seconds`.
-
-5. **Start the Frontend and Login:**
-
-   - Navigate to the **frontend project root** directory.
-   - Run the following command to start the frontend application:
-     ```bash
-     npm run dev
-     ```
-   - Once the frontend is running, open the provided website URL in your browser.
-   - Log in using the initial, auto-generated credentials, which can be found in the **[Default Users](#default-users)** section.
-
----
-
-### 3. Post-Setup & Access
-
-Once the application is running:
-
-1.  **API Access:** The backend API will be available at:
-    - **Base URL:** `http://localhost:8080`
-2.  **Data Seeding:** If `DEV_DATA_LOADER_ENABLED` was set to `true`, the database will be populated with sample data (Routes, Buses, etc.). Check your data seeding logic for default login credentials.
-3.  **Next Steps:**
-    - **Frontend Connection:** Ensure your frontend application is running on one of the **CORS-allowed origins** and is configured to make API calls to `http://localhost:8080`.
-    - **Testing:** Use a tool like Postman to test the core endpoints (e.g., `/api/auth/login` and `/api/buses`).
-
-## 🌐 Main API Endpoints
-
-The application exposes a structured RESTful API accessible via the base URL: `http://localhost:8080/api`.
-
----
-
-<a id="installation-setup-docker"></a>
-
-## 🐳 Docker Setup
-
-It is recommended to create a `docker-compose.yml` file to initiate all Frontend, Backend, and Database components of the project together.
-
-### Project Structure
-
-```
-ptms-project-root/
-├── backend project/              # Backend Repository
-├── frontend project/             # Frontend Repository
-├── docker/                       # Docker configuration folder
-├── logs/                         # Application logs folder
-└── docker-compose.yml            # Docker Compose configuration
+# Public Transport Management System (PTMS) Backend
+
+PTMS is a Spring Boot backend for a small public-transport operations domain. The project demonstrates a feature-oriented layered monolith, REST APIs, session-based Spring Security, PostgreSQL/PostGIS persistence, Flyway migrations, auditing, and automated tests.
+
+## Domain model
+
+```text
+Route
+  ↓
+ScheduledTrip
+  ↓
+Assignment
+  ├── Bus
+  ├── Driver
+  └── Conductor
 ```
 
-### Setup Instructions
+Users authenticate to the API and are authorized with one of these roles:
 
-1. **Create the project root directory** and clone both repositories into it.
+- `ROLE_ADMIN`
+- `ROLE_OPERATIONS_MANAGER`
+- `ROLE_USER`
 
-2. **Create a `logs` folder** within the project root:
+## Architecture
 
-   ```bash
-   mkdir logs
-   ```
+The code is organized by feature while retaining normal application layers inside each feature.
 
-3. **Copy the following files and folders** from the backend project's path (`PTMS-Backend/full-stack-setup-files`) and place them into the project root:
-   - The `docker` folder
-   - The `docker-compose.yml` file
-
-> [!IMPORTANT]
-> If you have modified the project structure, ensure that the file path directories in the `context` fields match your current layout:
->
-> - **Backend**: `context: Backend project folder name`
-> - **Frontend**: `context: Frontend project folder name`
-
-### Configuration Options
-
-- **`SHOULD_CREATE_INITIAL_USERS`**: It is highly recommended to keep this enabled to create default admin and user accounts.
-- **`DEV_DATA_LOADER_ENABLED`**: You can disable sample data population by setting this to `"false"` if you prefer to start with an empty database records.
-
-### Running the Application
-
-1. **Navigate to the project root directory** (where `docker-compose.yml` is located).
-
-2. **Start all services** with Docker Compose:
-
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Access the application**:
-
-   - **Frontend**: [http://localhost:5173](http://localhost:5173)
-   - **Backend API**: [http://localhost:8080](http://localhost:8080)
-   - **Database**: `localhost:5433`
-
-4. **View logs** (optional):
-
-   ```bash
-   docker-compose logs -f
-   ```
-
-5. **Stop all services**:
-   ```bash
-   docker-compose down
-   ```
-6. **Access the Application and Log In**:
-
-   - Once the Docker containers are successfully built and running, open the following URL in your web browser:
-     **[http://localhost:5173](http://localhost:5173)**
-   - Log in to the application using the initial, auto-generated credentials, which can be found in the **[Default Users](#default-users)** section.
-
-> [!TIP]
-> Use `docker-compose down -v` to remove volumes and reset the database to its initial state.
-
----
-
-### Authentication & User Management
-
-These endpoints handle user security, session management, and basic user registration.
-
-| HTTP Method | Endpoint              | Description                                                                         | Access        |
-| :---------- | :-------------------- | :---------------------------------------------------------------------------------- | :------------ |
-| **POST**    | `/api/auth/login`     | **Login:** Authenticates a user and establishes a session (returns session cookie). | Public        |
-| **POST**    | `/api/auth/logout`    | **Logout:** Clears the session cookie, terminating the user session.                | Authenticated |
-| **GET**     | `/api/auth/me`        | **Profile:** Retrieves information about the current authenticated user.            | Authenticated |
-| **POST**    | `/api/users/register` | **Register:** Creates a new user account.                                           | Public        |
-| **GET**     | `/api/users`          | Retrieves a list of all system users.                                               | ADMIN         |
-| **GET**     | `/api/users/{id}`     | Retrieves a user by their ID.                                                       | ADMIN         |
-| **PUT**     | `/api/users/{id}`     | Updates a user's details.                                                           | ADMIN         |
-| **DELETE**  | `/api/users/{id}`     | Deletes a user by their ID.                                                         | ADMIN         |
-
----
-
-### Route Management
-
-| Controller          | Base Path     | Functionality                                                                                                                         |
-| :------------------ | :------------ | :------------------------------------------------------------------------------------------------------------------------------------ |
-| **RouteController** | `/api/routes` | Standard CRUD operations for Routes. Includes dedicated endpoints for searching by **route number**, **origin**, and **destination**. |
-
-### Vehicle Management
-
-| Controller        | Base Path    | Functionality                                                                                                                 |
-| :---------------- | :----------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| **BusController** | `/api/buses` | Standard CRUD operations for Buses. Includes a search endpoint for filtering by **registration number** and **service type**. |
-
-### Employee Management
-
-The system manages drivers and conductors through inherited entity structures.
-
-| Controller              | Base Path         | Functionality                                                                                                |
-| :---------------------- | :---------------- | :----------------------------------------------------------------------------------------------------------- |
-| **DriverController**    | `/api/drivers`    | CRUD and retrieval of **Driver** entities. Includes lookup by **NIC number**.                                |
-| **ConductorController** | `/api/conductors` | CRUD and retrieval of **Conductor** entities. Includes lookup by **NIC number**.                             |
-| **EmployeeController**  | `/api/employees`  | Search and query endpoints across both Driver and Conductor types (e.g., searching by name, contact number). |
-
-### Assignment & Trip Management
-
-| Controller                  | Base Path              | Functionality                                                                                                                                               |
-| :-------------------------- | :--------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AssignmentController**    | `/api/assignments`     | CRUD and comprehensive search for resource assignments (Bus, Driver, Conductor) to a trip. Search supports filtering by date, status, and employee/bus IDs. |
-| **ScheduledTripController** | `/api/scheduled-trips` | CRUD and search functionality for defining and querying the planned schedule of trips (e.g., by route number, direction).                                   |
-
-### Utility & Diagnostics
-
-| Controller              | Base Path                | Functionality                                                                                                |
-| :---------------------- | :----------------------- | :----------------------------------------------------------------------------------------------------------- |
-| **DashboardController** | `/api/dashboard/metrics` | Retrieves core operational metrics and statistics for the system dashboard.                                  |
-| **AuditController**     | `/api/audit`             | Provides historical change logs for entities (e.g., Bus) and recent **global audit logs** across the system. |
-| **ActionLogController** | `/api/action-logs`       | Retrieves a full list of user actions and system events.                                                     |
-| **EnumController**      | `/api/enums`             | Provides various application enumerations (Service Types, Fuel Types, User Roles) for frontend consumption.  |
-
-## 📁 Project Structure
-
-```
-public-transport-management-system/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── .mvn/
-├── scripts/
-│   ├── run-dev.ps1            # PowerShell script to run the app
-│   └── (other setup scripts)
-├── logs/
-│   └── ptms.log
-├── .env.dev
-├── .env.prod
-├── Dockerfile
-├── docker-entrypoint.sh
-├── pom.xml
-└── src/
-├── main/
-│   ├── java/
-│   │   └── com/tritonptms/public_transport_management_system/
-│   │       ├── PublicTransportManagementSystemApplication.java (Main Entry Point)
-│   │       ├── auditing/
-│   │       │   ├── CustomRevisionEntity.java
-│   │       │   └── CustomRevisionListener.java
-│   │       ├── config/
-│   │       │   ├── security/
-│   │       │   ├── dataLoaders/
-│   │       │   ├── StartupDiagnostics.java
-│   │       │   └── StartupPropertyValidator.java (Pre-context)
-│   │       ├── controller/
-│   │       ├── dto/
-│   │       ├── exception/
-│   │       ├── model/
-│   │       ├── repository/
-│   │       ├── service/
-│   │       │   └── specification/
-│   │       └── utils/
-│   └── resources/
-│       ├── application.properties
-│       ├── application-dev.properties
-│       ├── application-prod.properties
-│       ├── application-test.properties
-│       └── logback-spring.xml
-└── test/
-├── java/
-│   └── com/tritonptms/public_transport_management_system/
-│       ├── PublicTransportManagementSystemApplicationTests.java
-│       ├── controller/
-│       └── service/
+```text
+com.tritonptms.ptms/
+├── PtmsApplication.java
+├── common/
+│   ├── audit/
+│   ├── config/
+│   ├── exception/
+│   ├── reference/
+│   └── web/
+├── security/
+├── auth/
+├── user/
+├── bus/
+├── employee/
+├── route/
+├── schedule/
+├── assignment/
+├── dashboard/
+└── audit/
 ```
 
-<a id="default-users"></a>
+Typical request flow:
 
-## 👥 Default Users (Development Environment)
+```text
+HTTP
+  ↓
+Spring Security
+  ↓
+Controller
+  ↓
+Request DTO + Jakarta Validation
+  ↓
+Service + transaction boundary
+  ↓
+Repository
+  ↓
+Spring Data JPA / Hibernate
+  ↓
+PostgreSQL / PostGIS
+```
 
-The system automatically creates default users when running in development mode:
+Cross-cutting responsibilities:
 
-| Username   | Password    | Role               | Description           |
-| ---------- | ----------- | ------------------ | --------------------- |
-| `admin`    | `adminpass` | ADMIN              | Full system access    |
-| `ops`      | `opspass`   | OPERATIONS_MANAGER | Exclude User and Logs |
-| `testuser` | `testpass`  | USER               | Bus and Route         |
+- schema/versioning: Flyway;
+- authentication: Spring Security session + CSRF;
+- errors: `ProblemDetail` + `@RestControllerAdvice`;
+- metadata auditing: Spring Data JPA auditing;
+- revision history: Hibernate Envers/Spring Data Envers for `Bus`;
+- health: Spring Boot Actuator.
 
-> [!NOTE]
-> The exact credentials are set and initially loaded by the [UserDataLoader.java](src/main/java/com/tritonptms/public_transport_management_system/config/dataLoaders/UserDataLoader.java) file.
+See [Architecture](docs/ARCHITECTURE.md) for more detail.
 
-## 📄 License
+## Main technologies
 
-This project is licensed under the MIT License.
+- Java 21
+- Spring Boot 3.5.4
+- Spring MVC
+- Spring Security
+- Jakarta Validation
+- Spring Data JPA / Hibernate ORM
+- Hibernate Spatial + JTS
+- PostgreSQL 16 / PostGIS
+- Flyway
+- Spring Data JPA Auditing
+- Hibernate Envers + Spring Data Envers
+- Spring Boot Actuator
+- Maven Wrapper
+- JUnit 5, Mockito, Spring Security Test
+- Testcontainers with PostGIS
 
-## 🔄 Version History
+## Prerequisites
 
-- **v1.0.0** - Initial release with core functionalitys
+For local development:
 
----
+1. JDK 21
+2. Docker Desktop (or another Docker-compatible engine)
+3. Git
 
-## Modernization status
+You do **not** need to install Maven separately. Use `mvnw.cmd` on Windows or `./mvnw` on Linux/macOS.
 
-Phase 2 application/API modernization is implemented. See [`PHASE_2_HANDOFF.md`](PHASE_2_HANDOFF.md) for the current API/security behavior, local verification commands, and the explicit Phase 3 boundary.
+Verify Java and Maven on Windows:
+
+```powershell
+java -version
+.\mvnw.cmd -version
+```
+
+## Run locally on Windows
+
+### 1. Start PostgreSQL/PostGIS
+
+```powershell
+docker compose -f compose.dev.yml up -d
+```
+
+The development database defaults are:
+
+```text
+database: bus_transport_db
+username: postgres
+password: root
+port:     5432
+```
+
+These credentials are **development-only**.
+
+### 2. Start the application
+
+```powershell
+.\mvnw.cmd "-Dspring-boot.run.profiles=dev" spring-boot:run
+```
+
+Flyway runs automatically. Hibernate uses `ddl-auto=validate`, so Flyway owns schema changes.
+
+The default development seeder is enabled only for the `dev` profile. It creates sample data and this development administrator when missing:
+
+```text
+username: devadmin
+password: Admin123!
+```
+
+This credential does not exist in the `prod` profile.
+
+### 3. Health check
+
+```text
+GET http://localhost:8080/actuator/health
+```
+
+Expected result:
+
+```json
+{"status":"UP"}
+```
+
+### Optional `.env.dev` workflow
+
+Copy the example file, edit it if needed, then use the helper script:
+
+```powershell
+Copy-Item .env.example .env.dev
+.\scripts\run-dev.ps1
+```
+
+`.env.dev` is ignored by Git.
+
+## Tests
+
+The persistence/integration tests use Testcontainers with a real PostGIS image. Docker must be running.
+
+```powershell
+.\mvnw.cmd clean test
+```
+
+Build the final JAR:
+
+```powershell
+.\mvnw.cmd clean package
+```
+
+Or run both checks through:
+
+```powershell
+.\scripts\verify.ps1
+```
+
+Integration coverage includes Flyway startup, Hibernate validation, PostGIS geometry persistence, login/session behavior, CSRF, role authorization, standardized errors, Bus CRUD/revisions, and Actuator health.
+
+## Reset the development database
+
+This deletes the local Docker development volume:
+
+```powershell
+docker compose -f compose.dev.yml down -v
+docker compose -f compose.dev.yml up -d
+```
+
+Restart the application and Flyway will rebuild the schema from zero.
+
+## Session authentication and CSRF
+
+PTMS intentionally uses browser-style session authentication rather than JWT.
+
+For Postman or another manual API client:
+
+1. `GET /api/auth/csrf` and retain the cookies.
+2. Read the returned token and send it as `X-XSRF-TOKEN`.
+3. `POST /api/auth/login` with JSON credentials.
+4. Retain the returned `JSESSIONID` cookie.
+5. Request `GET /api/auth/csrf` again after login because the CSRF token is rotated.
+6. For `POST`, `PUT`, `PATCH`, and `DELETE`, send the new `X-XSRF-TOKEN` header and session cookies.
+7. Use `GET /api/auth/me` to inspect the authenticated user.
+8. `POST /api/auth/logout` with the CSRF token to end the session.
+
+Example login body:
+
+```json
+{
+  "username": "devadmin",
+  "password": "Admin123!"
+}
+```
+
+See [API and authentication guide](docs/API.md) for endpoint groups and roles.
+
+## Configuration and profiles
+
+A runtime profile must be selected explicitly. There is no silent fallback to `dev`.
+
+Profiles:
+
+- `dev` – local PostGIS defaults, development logs, optional sample seeding;
+- `test` – datasource supplied by Testcontainers;
+- `prod` – requires externally supplied database/CORS configuration and disables sample seeding.
+
+Important production variables:
+
+```text
+SPRING_PROFILES_ACTIVE=prod
+DB_URL=jdbc:postgresql://<host>:5432/<database>
+DB_USERNAME=<username>
+DB_PASSWORD=<secret>
+CORS_ALLOWED_ORIGINS=https://<frontend-origin>
+COOKIE_SECURE=true
+```
+
+No production database password or production user password is committed to the repository.
+
+## Auditing
+
+Two audit concerns are intentionally separated:
+
+1. Spring Data JPA auditing records `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` on core entities.
+2. `Bus` additionally retains full revisions through Envers.
+
+Admin-only history endpoint:
+
+```text
+GET /api/buses/{id}/revisions
+```
+
+The former duplicate `ActionLog`/reflection-based audit framework was removed.
+
+## Actuator
+
+`/actuator/health` is public so container/platform health checks can use it. Other actuator endpoints follow normal authentication rules. The production profile exposes only `health` and `info`.
+
+## CI
+
+`.github/workflows/ci.yml` uses Java 21 and runs:
+
+```text
+./mvnw clean test
+./mvnw -DskipTests package
+```
+
+The integration tests rely on Testcontainers, and GitHub-hosted Ubuntu runners provide Docker for them.
+
+## Additional documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [API and authentication](docs/API.md)
+- [Final modernization handoff](PHASE_3_HANDOFF.md)

@@ -1,5 +1,6 @@
 package com.tritonptms.ptms.bus;
 
+import com.tritonptms.ptms.common.audit.AuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,15 +13,17 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.envers.AuditOverride;
 import org.hibernate.envers.Audited;
 
 @Entity
 @Audited
+@AuditOverride(forClass = AuditableEntity.class, isAudited = true)
 @Table(name = "buses", indexes = {
         @Index(name = "idx_buses_active", columnList = "is_active"),
         @Index(name = "idx_buses_service_type", columnList = "service_type")
 })
-public class Bus {
+public class Bus extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

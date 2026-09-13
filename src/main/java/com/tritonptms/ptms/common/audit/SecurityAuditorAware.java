@@ -1,21 +1,23 @@
-package com.tritonptms.ptms.audit;
+package com.tritonptms.ptms.common.audit;
 
-import org.hibernate.envers.RevisionListener;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
-public class CustomRevisionListener implements RevisionListener {
+import java.util.Optional;
+
+@Component
+public class SecurityAuditorAware implements AuditorAware<String> {
 
     @Override
-    public void newRevision(Object revisionEntity) {
-        CustomRevisionEntity revision = (CustomRevisionEntity) revisionEntity;
+    public Optional<String> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
-            revision.setUsername("system");
-            return;
+            return Optional.of("system");
         }
-        revision.setUsername(authentication.getName());
+        return Optional.ofNullable(authentication.getName()).filter(name -> !name.isBlank());
     }
 }

@@ -1,5 +1,6 @@
 package com.tritonptms.ptms.assignment;
 
+import com.tritonptms.ptms.common.audit.AuditableEntity;
 import com.tritonptms.ptms.bus.Bus;
 import com.tritonptms.ptms.employee.Conductor;
 import com.tritonptms.ptms.employee.Driver;
@@ -27,7 +28,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_assignments_status", columnList = "status"),
         @Index(name = "idx_assignments_trip", columnList = "scheduled_trip_id")
 })
-public class Assignment {
+public class Assignment extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,23 +68,78 @@ public class Assignment {
     @Column(nullable = false, length = 20)
     private AssignmentStatus status = AssignmentStatus.SCHEDULED;
 
-    public Assignment() { }
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public ScheduledTrip getScheduledTrip() { return scheduledTrip; }
-    public void setScheduledTrip(ScheduledTrip scheduledTrip) { this.scheduledTrip = scheduledTrip; }
-    public Bus getBus() { return bus; }
-    public void setBus(Bus bus) { this.bus = bus; }
-    public Driver getDriver() { return driver; }
-    public void setDriver(Driver driver) { this.driver = driver; }
-    public Conductor getConductor() { return conductor; }
-    public void setConductor(Conductor conductor) { this.conductor = conductor; }
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
-    public LocalDateTime getActualStartTime() { return actualStartTime; }
-    public void setActualStartTime(LocalDateTime actualStartTime) { this.actualStartTime = actualStartTime; }
-    public LocalDateTime getActualEndTime() { return actualEndTime; }
-    public void setActualEndTime(LocalDateTime actualEndTime) { this.actualEndTime = actualEndTime; }
-    public AssignmentStatus getStatus() { return status; }
-    public void setStatus(AssignmentStatus status) { this.status = status; }
+    public Assignment() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public ScheduledTrip getScheduledTrip() {
+        return scheduledTrip;
+    }
+
+    public void setScheduledTrip(ScheduledTrip scheduledTrip) {
+        this.scheduledTrip = scheduledTrip;
+    }
+
+    public Bus getBus() {
+        return bus;
+    }
+
+    public void setBus(Bus bus) {
+        this.bus = bus;
+    }
+
+    public Driver getDriver() {
+        return driver;
+    }
+
+    public void setDriver(Driver driver) {
+        this.driver = driver;
+    }
+
+    public Conductor getConductor() {
+        return conductor;
+    }
+
+    public void setConductor(Conductor conductor) {
+        this.conductor = conductor;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public LocalDateTime getActualStartTime() {
+        return actualStartTime;
+    }
+
+    public void setActualStartTime(LocalDateTime actualStartTime) {
+        this.actualStartTime = actualStartTime;
+    }
+
+    public LocalDateTime getActualEndTime() {
+        return actualEndTime;
+    }
+
+    public void setActualEndTime(LocalDateTime actualEndTime) {
+        this.actualEndTime = actualEndTime;
+    }
+
+    public AssignmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AssignmentStatus status) {
+        this.status = status;
+    }
 }
