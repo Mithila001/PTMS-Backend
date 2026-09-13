@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: ptms-postgres-dev
+    environment:
+      POSTGRES_DB: bus_transport_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - ptms-dev-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bus_transport_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ptms-dev-db:

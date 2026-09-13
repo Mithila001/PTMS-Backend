@@ -37,5 +37,5 @@ Write-Host "Starting Spring Boot application with 'dev' profile..."
 # 4. Run the application from the project root. Spring Boot will automatically detect
 # the active profile from the SPRING_PROFILES_ACTIVE environment variable.
 pushd $projectRoot
-.\mvnw spring-boot:run
+.\mvnw.cmd spring-boot:run
 popd

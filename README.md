@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Modernization status: Phase 1 of 3.** The foundation has been reorganized and is not yet the final API/security/auditing/test design. For the current fresh-clone setup, build commands, development database, and known Phase 1 boundaries, see [`PHASE_1_HANDOFF.md`](PHASE_1_HANDOFF.md). The full README refresh is intentionally deferred to Phase 3.
+
 # Public Transport Management System - Backend API
 
 ## 📖 Table of Contents

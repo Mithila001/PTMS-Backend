@@ -10,7 +10,7 @@ RUN mvn dependency:go-offline -B
 
 # Copy source code and build
 COPY src src
-RUN mvn clean package -DskipTests -q
+RUN mvn clean package -Dmaven.test.skip=true -q
 
 # Production stage - use Alpine for smaller size
 FROM eclipse-temurin:21-jre-alpine
@@ -26,7 +26,7 @@ RUN apk add --no-cache bash
 RUN addgroup -S appuser && adduser -S appuser -G appuser
 
 # Copy jar from builder stage
-COPY --from=builder /app/target/public-transport-management-system-*.jar app.jar
+COPY --from=builder /app/target/ptms-*.jar app.jar
 
 # Create logs directory and set permissions
 RUN mkdir -p logs && chown -R appuser:appuser logs app.jar
