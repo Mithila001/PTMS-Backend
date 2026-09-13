@@ -1,3 +1,5 @@
+SET search_path TO ptms, public;
+
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE buses (

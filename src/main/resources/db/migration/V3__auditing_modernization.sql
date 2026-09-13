@@ -1,3 +1,5 @@
+SET search_path TO ptms, public;
+
 -- Spring Data auditing metadata for core persisted models.
 ALTER TABLE buses
     ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
