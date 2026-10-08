@@ -4,6 +4,7 @@ import com.tritonptms.ptms.feature.user.dto.CreateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.CreateUserResponse;
 import com.tritonptms.ptms.feature.user.dto.UpdateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.UserResponse;
+import com.tritonptms.ptms.feature.user.dto.ResetPasswordResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +16,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -29,8 +32,8 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers();
+    public Page<UserResponse> getAllUsers(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        return userService.getAllUsers(pageable);
     }
 
     @GetMapping("/{id}")
@@ -52,5 +55,10 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/reset-password")
+    public ResetPasswordResponse resetPassword(@PathVariable Long id) {
+        return userService.resetPassword(id);
     }
 }

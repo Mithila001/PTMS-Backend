@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -41,7 +42,11 @@ public class User extends AuditableEntity {
     @Column(nullable = false, unique = true, length = 15)
     private String nic;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @Column(name = "auth_version", nullable = false)
+    private long authVersion;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -76,6 +81,8 @@ public class User extends AuditableEntity {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public String getNic() { return nic; }
     public void setNic(String nic) { this.nic = nic; }
+    public long getAuthVersion() { return authVersion; }
+    public void setAuthVersion(long authVersion) { this.authVersion = authVersion; }
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
     public void addRole(Role role) { this.roles.add(role); }

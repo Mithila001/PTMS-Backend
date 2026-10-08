@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -145,6 +146,9 @@ public class SecurityConfig {
                                                 .logoutSuccessHandler((request, response, authentication) -> response
                                                                 .setStatus(HttpServletResponse.SC_NO_CONTENT)))
                                 .addFilterAt(jsonLoginFilter, UsernamePasswordAuthenticationFilter.class);
+
+                http.addFilterAfter(new AuthVersionFilter(userDetailsService, authenticationEntryPoint),
+                                SecurityContextHolderFilter.class);
 
                 return http.build();
         }

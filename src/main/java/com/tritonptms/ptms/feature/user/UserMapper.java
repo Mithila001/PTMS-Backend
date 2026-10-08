@@ -4,6 +4,7 @@ import com.tritonptms.ptms.feature.user.dto.CreateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.UpdateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.UserResponse;
 import org.springframework.stereotype.Component;
+import java.util.Locale;
 
 @Component
 public class UserMapper {
@@ -12,7 +13,7 @@ public class UserMapper {
         User user = new User();
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
-        user.setEmail(request.email().trim().toLowerCase());
+        user.setEmail(request.email().trim().toLowerCase(Locale.ROOT));
         user.setNic(request.nic().trim());
         return user;
     }
@@ -20,7 +21,7 @@ public class UserMapper {
     public void applyUpdate(User user, UpdateUserRequest request) {
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
-        user.setEmail(request.email().trim().toLowerCase());
+        user.setEmail(request.email().trim().toLowerCase(Locale.ROOT));
         user.setNic(request.nic().trim());
     }
 

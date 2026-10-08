@@ -16,12 +16,14 @@ public final class AuthenticatedUser implements UserDetails {
     private final Long id;
     private final String username;
     private final String password;
+    private final long authVersion;
     private final List<GrantedAuthority> authorities;
 
-    public AuthenticatedUser(Long id, String username, String password, Collection<String> roles) {
+    public AuthenticatedUser(Long id, String username, String password, long authVersion, Collection<String> roles) {
         this.id = id;
         this.username = username;
         this.password = password;
+        this.authVersion = authVersion;
         this.authorities = roles.stream()
                 .sorted()
                 .map(SimpleGrantedAuthority::new)
@@ -31,6 +33,10 @@ public final class AuthenticatedUser implements UserDetails {
 
     public Long id() {
         return id;
+    }
+
+    public long authVersion() {
+        return authVersion;
     }
 
     public List<String> roles() {

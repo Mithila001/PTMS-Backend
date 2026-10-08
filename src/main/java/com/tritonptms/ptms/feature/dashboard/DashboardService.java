@@ -10,6 +10,7 @@ import com.tritonptms.ptms.feature.route.RouteRepository;
 import com.tritonptms.ptms.feature.schedule.ScheduledTripRepository;
 
 import java.time.LocalDate;
+import java.time.Clock;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,24 +25,26 @@ public class DashboardService {
     private final RouteRepository routeRepository;
     private final ScheduledTripRepository scheduledTripRepository;
     private final AssignmentRepository assignmentRepository;
+    private final Clock clock;
 
     public DashboardService(BusRepository busRepository, DriverRepository driverRepository,
             ConductorRepository conductorRepository, RouteRepository routeRepository,
-            ScheduledTripRepository scheduledTripRepository, AssignmentRepository assignmentRepository) {
+            ScheduledTripRepository scheduledTripRepository, AssignmentRepository assignmentRepository, Clock clock) {
         this.busRepository = busRepository;
         this.driverRepository = driverRepository;
         this.conductorRepository = conductorRepository;
         this.routeRepository = routeRepository;
         this.scheduledTripRepository = scheduledTripRepository;
         this.assignmentRepository = assignmentRepository;
+        this.clock = clock;
     }
     public DashboardDto getDashboardData() {
         long totalActiveBuses = busRepository.countByIsActive(true);
-        long totalActiveDrivers = driverRepository.countByAvailable(true);
-        long totalActiveConductors = conductorRepository.countByAvailable(true);
+        long totalActiveDrivers = driverRepository.countActiveEmployees();
+        long totalActiveConductors = conductorRepository.countActiveEmployees();
         long totalRoutes = routeRepository.count();
         long totalScheduledTrips = scheduledTripRepository.count();
-        long totalActiveAssignments = assignmentRepository.countByDateAfter(LocalDate.now());
+        long totalActiveAssignments = assignmentRepository.countDashboardActive(LocalDate.now(clock));
 
         return new DashboardDto(
                 totalActiveBuses,

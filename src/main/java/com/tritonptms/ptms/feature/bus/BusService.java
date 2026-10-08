@@ -11,7 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,8 +24,8 @@ public class BusService {
         this.busMapper = busMapper;
     }
 
-    public List<BusResponse> getAllBuses() {
-        return busRepository.findAll().stream().map(busMapper::toResponse).toList();
+    public Page<BusResponse> getAllBuses(Pageable pageable) {
+        return busRepository.findAll(pageable).map(busMapper::toResponse);
     }
 
     public BusResponse getBusById(Long id) {

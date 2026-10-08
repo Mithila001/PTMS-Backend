@@ -203,6 +203,12 @@ Or run both checks through:
 .\scripts\verify.ps1
 ```
 
+Check that verification stops on a failed native command:
+
+```powershell
+.\scripts\verify.ps1 -SelfTest
+```
+
 Integration coverage includes Flyway startup, Hibernate validation, PostGIS geometry persistence, login/session behavior, CSRF, role authorization, standardized errors, Bus CRUD/revisions, and Actuator health.
 
 ## Reset the development database
@@ -264,6 +270,28 @@ COOKIE_SECURE=true
 ```
 
 No production database password or production user password is committed to the repository.
+
+### First production administrator
+
+Production administrator bootstrap is disabled unless `APP_BOOTSTRAP_ENABLED=true`. For the first startup only, supply:
+
+```text
+APP_BOOTSTRAP_ENABLED=true
+APP_BOOTSTRAP_USERNAME=<username>
+APP_BOOTSTRAP_PASSWORD=<password, at least 12 characters>
+APP_BOOTSTRAP_EMAIL=<email>
+APP_BOOTSTRAP_FIRST_NAME=<first-name>
+APP_BOOTSTRAP_LAST_NAME=<last-name>
+APP_BOOTSTRAP_NIC=<nic>
+```
+
+The password must fit within 72 UTF-8 bytes. If an administrator already exists, startup leaves accounts unchanged. Otherwise incomplete settings or details that collide with a non-admin account stop startup. After the first successful startup, disable bootstrap and remove `APP_BOOTSTRAP_PASSWORD` from the environment.
+
+Authenticated requests check the account's authentication version against the database. A role change, password change/reset, or account deletion rejects old sessions on their next request. This simple approach uses one database lookup per authenticated request; a request already in progress may complete.
+
+Collection endpoints return pages by default, with 20 records ordered by ID and a maximum requested size of 100. Responses use Spring Data's `{content, page}` shape. This includes the former array endpoints for buses, routes, scheduled trips, assignments, drivers, conductors, and users.
+
+Scheduled trips may run overnight: an end time earlier than its start means the following day. Active assignments require an active bus, available current staff, and licences valid through the trip end. Non-cancelled assignments reserve bus, driver, conductor, and trip time; overlapping bookings return `409`, while back-to-back bookings are allowed. Assigned trip definitions cannot be edited; create a new trip instead. See [API and authentication guide](docs/API.md) for status/time rules and a complete walkthrough.
 
 ## Auditing
 

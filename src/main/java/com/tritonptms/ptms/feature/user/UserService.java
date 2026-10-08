@@ -7,12 +7,14 @@ import com.tritonptms.ptms.feature.user.dto.CreateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.CreateUserResponse;
 import com.tritonptms.ptms.feature.user.dto.UpdateUserRequest;
 import com.tritonptms.ptms.feature.user.dto.UserResponse;
+import com.tritonptms.ptms.feature.user.dto.ResetPasswordResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +26,6 @@ import java.util.Set;
 @PreAuthorize("hasRole('ADMIN')")
 public class UserService {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,8 +41,8 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(userMapper::toResponse).toList();
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(userMapper::toResponse);
     }
 
     public UserResponse getUserById(Long id) {
@@ -49,8 +50,18 @@ public class UserService {
     }
 
     @Transactional
+    public ResetPasswordResponse resetPassword(Long id) {
+        User user = userRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        String initialPassword = UserPasswordGenerator.generate(14);
+        user.setPassword(passwordEncoder.encode(initialPassword));
+        user.setAuthVersion(user.getAuthVersion() + 1);
+        return new ResetPasswordResponse(user.getUsername(), initialPassword);
+    }
+
+    @Transactional
     public CreateUserResponse createUser(CreateUserRequest request) {
-        String email = request.email().trim().toLowerCase();
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
         String nic = request.nic().trim();
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("A user with this email already exists.");
@@ -61,19 +72,20 @@ public class UserService {
 
         User user = userMapper.fromCreateRequest(request);
         String username = generateUsername(request.firstName(), request.lastName());
-        String temporaryPassword = generateTemporaryPassword(14);
+        String initialPassword = UserPasswordGenerator.generate(14);
         user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(temporaryPassword));
+        user.setPassword(passwordEncoder.encode(initialPassword));
         user.setRoles(resolveRoles(request.roles()));
         userRepository.save(user);
 
-        return new CreateUserResponse(username, temporaryPassword);
+        return new CreateUserResponse(username, initialPassword);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User user = findUser(id);
-        String email = request.email().trim().toLowerCase();
+        User user = userRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
         String nic = request.nic().trim();
 
         userRepository.findByEmail(email)
@@ -83,8 +95,22 @@ public class UserService {
                 .filter(other -> !other.getId().equals(id))
                 .ifPresent(other -> { throw new ConflictException("A user with this NIC already exists."); });
 
+        Set<Role> roles = resolveRoles(request.roles());
+        boolean rolesChanged = !user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet())
+                .equals(roles.stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()));
+        boolean removingOwnAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal() instanceof com.tritonptms.ptms.infrastructure.security.AuthenticatedUser principal
+                && principal.id().equals(id)
+                && user.getRoles().stream().anyMatch(role -> role.getName().equals("ROLE_ADMIN"))
+                && roles.stream().noneMatch(role -> role.getName().equals("ROLE_ADMIN"));
+        if (removingOwnAdmin) {
+            throw new BadRequestException("You cannot remove your own administrator role.");
+        }
         userMapper.applyUpdate(user, request);
-        user.setRoles(resolveRoles(request.roles()));
+        user.setRoles(roles);
+        if (rolesChanged) {
+            user.setAuthVersion(user.getAuthVersion() + 1);
+        }
         return userMapper.toResponse(userRepository.save(user));
     }
 
@@ -134,27 +160,4 @@ public class UserService {
         return normalized.isBlank() ? "user" : normalized;
     }
 
-    private String generateTemporaryPassword(int length) {
-        String upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        String lower = "abcdefghijkmnopqrstuvwxyz";
-        String digits = "23456789";
-        String symbols = "!@#$%";
-        String all = upper + lower + digits + symbols;
-
-        char[] password = new char[length];
-        password[0] = upper.charAt(RANDOM.nextInt(upper.length()));
-        password[1] = lower.charAt(RANDOM.nextInt(lower.length()));
-        password[2] = digits.charAt(RANDOM.nextInt(digits.length()));
-        password[3] = symbols.charAt(RANDOM.nextInt(symbols.length()));
-        for (int i = 4; i < length; i++) {
-            password[i] = all.charAt(RANDOM.nextInt(all.length()));
-        }
-        for (int i = password.length - 1; i > 0; i--) {
-            int j = RANDOM.nextInt(i + 1);
-            char tmp = password[i];
-            password[i] = password[j];
-            password[j] = tmp;
-        }
-        return new String(password);
-    }
 }

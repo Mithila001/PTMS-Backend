@@ -4,6 +4,7 @@ import com.tritonptms.ptms.common.persistence.AuditableEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.BatchSize;
 import org.locationtech.jts.geom.LineString;
 
 import java.util.List;
@@ -46,7 +48,8 @@ public class Route extends AuditableEntity {
     @Column(nullable = false, length = 100)
     private String destination;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @CollectionTable(name = "route_stops", joinColumns = @JoinColumn(name = "route_id"))
     @OrderColumn(name = "stop_order")
     @Column(name = "stop_name", nullable = false, length = 150)

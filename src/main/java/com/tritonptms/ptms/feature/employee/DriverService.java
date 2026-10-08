@@ -5,9 +5,10 @@ import com.tritonptms.ptms.feature.employee.dto.DriverRequest;
 import com.tritonptms.ptms.feature.employee.dto.DriverResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -22,8 +23,8 @@ public class DriverService {
         this.driverMapper = driverMapper;
     }
 
-    public List<DriverResponse> getAllDrivers() {
-        return driverRepository.findAll().stream().map(driverMapper::toResponse).toList();
+    public Page<DriverResponse> getAllDrivers(Pageable pageable) {
+        return driverRepository.findAll(pageable).map(driverMapper::toResponse);
     }
 
     public DriverResponse getDriverById(Long id) {

@@ -8,7 +8,7 @@ http://localhost:8080
 
 ## Authentication flow
 
-PTMS uses Spring Security sessions and CSRF protection.
+PTMS uses Spring Security sessions and CSRF protection. Role changes, password changes, password resets, and user deletion invalidate old sessions; sign in again after one of these changes.
 
 ### 1. Obtain a CSRF token
 
@@ -64,6 +64,21 @@ X-XSRF-TOKEN: <current-token>
 
 Expected status: `204 No Content`.
 
+### Change your password
+
+`POST /api/auth/change-password` requires an authenticated session and CSRF token:
+
+```json
+{
+  "currentPassword": "CurrentPassword1!",
+  "newPassword": "NewPassword2!"
+}
+```
+
+Passwords must contain at least 12 characters and fit within BCrypt's 72 UTF-8 byte limit. A successful change returns `204`; sign in again with the new password.
+
+Administrators can reset another account with `POST /api/users/{id}/reset-password`. The response includes its generated `initialPassword` once. Share it through a secure channel.
+
 ## Roles
 
 ```text
@@ -92,12 +107,34 @@ Spring authorities are stored internally as `ROLE_ADMIN`, `ROLE_OPERATIONS_MANAG
 | `/api/auth/csrf` | public | n/a | CSRF bootstrap |
 | `/api/auth/login` | public + CSRF | n/a | JSON login filter |
 | `/api/auth/me` | authenticated | n/a | Current principal |
+| `/api/auth/change-password` | authenticated | authenticated + CSRF | Changes the current user's password |
+| `/api/users/{id}/reset-password` | ADMIN | ADMIN + CSRF | Returns one replacement initial password |
 | `/api/auth/logout` | authenticated + CSRF | n/a | Session logout |
 | `/actuator/health` | public | n/a | Health check |
 
 ## Request/response style
 
 Public APIs use request/response DTOs rather than JPA entities. Pagination is rendered through Spring Data's stable page DTO mode: results are under `content` and page metadata is under `page`.
+Collection endpoints default to 20 items ordered by `id` and cap page size at 100. Search endpoints retain their filters and are paginated too. For example, `GET /api/buses?page=0&size=10` returns the first ten buses.
+
+## Scheduling rules
+
+- A trip ending earlier than it starts runs overnight into the following day. Equal start/end times are invalid.
+- Assignments require an active bus and available current staff. Driver, optional NTC, and conductor licences must be valid through the planned trip end date.
+- Non-cancelled assignments reserve their planned time interval. A bus, driver, conductor, or scheduled trip cannot be assigned to overlapping work; back-to-back trips are allowed.
+- `SCHEDULED` assignments have no actual times; `IN_PROGRESS` needs a start but no end; `COMPLETED` needs both; `CANCELED` may have neither, a start, or a valid start/end pair. Actual start must be on the assignment date.
+- A scheduled trip cannot be changed while a non-cancelled assignment uses it. Create a new trip definition instead.
+- Dashboard `totalActiveAssignments` counts scheduled trips dated today or later and all in-progress work. Active staff counts also require current employment.
+
+Scheduling conflicts and unavailable resources return `409`; malformed status/time combinations return `400`.
+
+## Portfolio walkthrough
+
+1. Start PostGIS and the application with the `dev` profile, then obtain a CSRF token and log in with the seeded development administrator.
+2. Create a bus, driver, conductor, route, and scheduled trip using `POST /api/buses`, `/api/drivers`, `/api/conductors`, `/api/routes`, and `/api/scheduled-trips`.
+3. Create an assignment with `POST /api/assignments`; repeat it with the same resource and overlapping time to see a `409` conflict.
+4. Read `GET /api/dashboard` and check `GET /api/assignments?page=0&size=20`.
+5. Change the password with `POST /api/auth/change-password`, then sign in again with the replacement password.
 
 State-changing requests use normal status codes such as:
 

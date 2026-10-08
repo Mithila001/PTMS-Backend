@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Locale;
 
 @Component
 public class EmployeeMapper {
@@ -25,7 +26,7 @@ public class EmployeeMapper {
         employee.setLastName(lastName.trim());
         employee.setDateOfBirth(toDate(dateOfBirth));
         employee.setContactNumber(contactNumber.trim());
-        employee.setEmail(email.trim().toLowerCase());
+        employee.setEmail(email.trim().toLowerCase(Locale.ROOT));
         employee.setAddress(address.trim());
         employee.setDateJoined(toDate(dateJoined));
         employee.setIsCurrentEmployee(currentEmployee);

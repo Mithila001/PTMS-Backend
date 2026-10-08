@@ -28,6 +28,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 user.getId(),
                 user.getUsername(),
                 user.getPassword(),
+                user.getAuthVersion(),
                 user.getRoles().stream().map(Role::getName).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean authVersionMatches(Long id, long authVersion) {
+        return userRepository.findAuthVersionById(id).filter(version -> version == authVersion).isPresent();
     }
 }

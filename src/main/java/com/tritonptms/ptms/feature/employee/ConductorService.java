@@ -5,9 +5,10 @@ import com.tritonptms.ptms.feature.employee.dto.ConductorRequest;
 import com.tritonptms.ptms.feature.employee.dto.ConductorResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -22,8 +23,8 @@ public class ConductorService {
         this.conductorMapper = conductorMapper;
     }
 
-    public List<ConductorResponse> getAllConductors() {
-        return conductorRepository.findAll().stream().map(conductorMapper::toResponse).toList();
+    public Page<ConductorResponse> getAllConductors(Pageable pageable) {
+        return conductorRepository.findAll(pageable).map(conductorMapper::toResponse);
     }
 
     public ConductorResponse getConductorById(Long id) {
